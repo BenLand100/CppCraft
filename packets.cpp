@@ -854,7 +854,7 @@ void free_packet(p_generic *p) {
 
 bool write_packet(TCPsocket socket, p_generic *packet) {
     SocketIO io(socket);
-    unsigned char pid = io.r_ubyte();
+    unsigned char pid = packet->id;
     switch (pid) {
         case 0x00:{
             p_keep_alive *p = (p_keep_alive*)packet;

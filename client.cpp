@@ -50,6 +50,7 @@ void Client::disconnect() {
 }
 
 bool Client::login(char *username) {
+    
 }
 
 bool Client::running() {
