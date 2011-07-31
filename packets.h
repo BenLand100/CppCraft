@@ -1,15 +1,17 @@
 #ifndef _packet
 #define _packet
 
-#include "client.h"
+#include "SDL_net.h"
+
+class Client; //foward declaration
+typedef struct { unsigned char id;} p_generic;
 
 int packets_thread(Client *client);
+bool write_packet(TCPsocket socket, p_generic *p);
 
 typedef struct { short len; char *str; } string8;
 typedef struct { short len; char *str; } string16;
-typedef struct { /* what to put here */ } metadata;
-
-typedef struct { unsigned char id;} p_generic;
+typedef struct { /* yep, doesn't do anything yet */ } metadata;
 
 typedef struct { unsigned char id; } p_keep_alive;
 typedef struct { unsigned char id; int Version; string16 Username; long MapSeed; char Dimension;} p_login_request_cts;
@@ -38,7 +40,7 @@ typedef struct { unsigned char id; int EID; string16 Name; int X; int Y; int Z; 
 typedef struct { unsigned char id; int EntityID; short Item; char Count; short Damage; int X; int Y; int Z; char Yaw; char Pitch; char Roll;} p_pickup_spawn;
 typedef struct { unsigned char id; int CollectedEID; int CollectorEID;} p_collect_item;
 typedef struct { unsigned char id; int EntityID; char Type; int X; int Y; int Z; int Flag; short Xmap; short Ymap; short Zmap;} p_addobject;
-typedef struct { unsigned char id; int EntityID; char Type; int X; int Y; int Z; char Yaw; char Pitch; metadata Metadata;} p_spawn_mob;
+typedef struct { unsigned char id; int EntityID; char Type; int X; int Y; int Z; char Yaw; char Pitch; metadata *Metadata;} p_spawn_mob;
 typedef struct { unsigned char id; int EntityID; string16 Title; int X; int Y; int Z; int Direction;} p_painting;
 typedef struct { unsigned char id; float A; float B; float C; float D; bool E; bool F;} p_stance_update;
 typedef struct { unsigned char id; int EntityID;} p_entity_velocity;
@@ -50,7 +52,7 @@ typedef struct { unsigned char id; int EntityID; char dX; char dY; char dZ; char
 typedef struct { unsigned char id; int EntityID; int X; int Y; int Z; char Yaw; char Pitch;} p_entity_teleport;
 typedef struct { unsigned char id; int EntityID; char Status;} p_entity_status;
 typedef struct { unsigned char id; int EntityID;} p_attach_entity;
-typedef struct { unsigned char id; int EntityID; metadata Metadata;} p_entity_metadata;
+typedef struct { unsigned char id; int EntityID; metadata *Metadata;} p_entity_metadata;
 typedef struct { unsigned char id; int X; int Z; bool Mode;} p_prechunk;
 typedef struct { unsigned char id; int X; short Y; int Z; char SizeX; char SizeY; char SizeZ; int CompressedSize; char* CompressedData;} p_map_chunk;
 typedef struct { unsigned char id; int ChunkX; int ChunkZ; short ArraySize; short* CoordinateArray; char* TypeArray; char* MetadataArray;} p_multi_block_change;

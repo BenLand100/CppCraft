@@ -3,6 +3,7 @@
 
 #include "SDL_thread.h"
 #include "SDL_net.h"
+#include "packets.h"
 
 class Client {
     public:
@@ -24,6 +25,7 @@ class Client {
         bool doPhysics,doPackets;
         SDL_Thread *physics,*packets;
         
+        void packet(p_generic *p);
         void sendPos();
         
     friend int physics_thread(Client *client);

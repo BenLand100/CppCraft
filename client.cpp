@@ -40,6 +40,10 @@ bool Client::connect(char *host, int port) {
     }
 }
 
+void Client::packet(p_generic *p) {
+    std::cout << "Unhandled Packet: 0x" << std::hex << (int)p->id << '\n';
+}
+
 void Client::disconnect() {
     connected = false;
     if (socket) SDLNet_TCP_Close(socket);
