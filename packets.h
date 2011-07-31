@@ -9,8 +9,8 @@ typedef struct { unsigned char id;} p_generic;
 int packets_thread(Client *client);
 bool write_packet(TCPsocket socket, p_generic *p);
 
-typedef struct { short len; char *str; } string8;
-typedef struct { short len; char *str; } string16;
+typedef char* string8;
+typedef char* string16;
 typedef struct { /* yep, doesn't do anything yet */ } metadata;
 
 typedef struct { unsigned char id; } p_keep_alive;

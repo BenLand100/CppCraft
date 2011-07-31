@@ -3,6 +3,48 @@
 #include "client.h"
 #include "SDL_endian.h"
 
+inline int ucs2_to_utf8(int ucs2, char *utf8) {
+    if (ucs2 < 0x80) {
+        utf8[0] = ucs2;
+        return 1;
+    }
+    if (ucs2 >= 0x80  && ucs2 < 0x800) {
+        utf8[0] = (ucs2 >> 6)   | 0xC0;
+        utf8[1] = (ucs2 & 0x3F) | 0x80;
+        return 2;
+    }
+    if (ucs2 >= 0x800 && ucs2 < 0xFFFF) {
+        utf8[0] = ((ucs2 >> 12)       ) | 0xE0;
+        utf8[1] = ((ucs2 >> 6 ) & 0x3F) | 0x80;
+        utf8[2] = ((ucs2      ) & 0x3F) | 0x80;
+        return 3;
+    }
+    return -1;
+}
+
+inline int utf8_to_ucs2(char *input, char **end_ptr) {
+    *end_ptr = input;
+    if (input[0] == 0)
+        return 0;
+    if (input[0] < 0x80) {
+        *end_ptr = input + 1;
+        return input[0];
+    }
+    if ((input[0] & 0xE0) == 0xE0) {
+        if (input[1] == 0 || input[2] == 0)
+            return -1;
+        *end_ptr = input + 3;
+        return (input[0] & 0x0F)<<12 | (input[1] & 0x3F)<<6 | (input[2] & 0x3F);
+    }
+    if ((input[0] & 0xC0) == 0xC0) {
+        if (input[1] == 0)
+            return -1;
+        *end_ptr = input + 2;
+        return (input[0] & 0x1F)<<6  | (input[1] & 0x3F);
+    }
+    return -1;
+}
+
 class SocketIO {
     public:
         bool working;
@@ -15,6 +57,11 @@ class SocketIO {
                 for (int i = 0; i < 16; i++) buffer[i] = 0;
             }
         }
+        inline void write(int len) {
+            if (SDLNet_TCP_Send(socket, (void*)buffer, len) != len) {
+                working = false;
+            }
+        }
         
     public:
         SocketIO(TCPsocket _socket) : socket(_socket), working(true) { }
@@ -22,21 +69,41 @@ class SocketIO {
             read(1);
             return buffer[0];
         }
+        inline void w_ubyte(unsigned char b) {
+            buffer[0] = b;
+            write(1);
+        }
         inline char r_byte() {
             read(1);
             return (char) buffer[0];
+        }
+        inline void w_byte(char b) {
+            buffer[0] = (unsigned char)b;
+            write(1);
         }
         inline short r_short() {
             read(2);
             return SDL_SwapBE16(*(Uint16*)buffer);
         }
+        inline void w_short(short s) {
+            *(short*)buffer = SDL_SwapBE16(s);
+            write(2);
+        }
         inline int r_int() {
             read(4);
             return SDL_SwapBE32(*(Uint32*)buffer);
         }
+        inline void w_int(int i) {
+            *(int*)buffer = SDL_SwapBE32(i);
+            write(4);
+        }
         inline long long r_long() {
             read(8);
             return SDL_SwapBE64(*(Uint64*)buffer);
+        }
+        inline void w_long(long long l) {
+            *(long long*)buffer = SDL_SwapBE64(l);
+            write(8);
         }
         inline float r_float() {
             read(4);
@@ -44,33 +111,90 @@ class SocketIO {
             swap.i = SDL_Swap32(*(Uint32*)buffer);
             return swap.f;
         }
+        inline void w_float(float f) {
+            union { float f; Uint32 i; } swap;
+            swap.f = f;
+            *(int*)buffer = SDL_SwapBE32(swap.i);
+            write(4);
+        }
         inline double r_double() {
             read(8);
             union { double d; Uint64 l; } swap;
             swap.l = SDL_Swap64(*(Uint64*)buffer);
             return swap.d;
         }
-        inline string8 r_string8() {
-            string8 res;
-            res.len = r_short();
-            res.str = new char[res.len];
-            if (SDLNet_TCP_Recv(socket, res.str, res.len) != res.len) {
-                working = false;
-            }
-            return res;
-        }
-        inline string16 r_string16() {
-            string16 res;
-            res.len = r_short();
-            res.str = new char[res.len*2];
-            if (SDLNet_TCP_Recv(socket, res.str, res.len*2) != res.len*2) {
-                working = false;
-            }
-            return res;
+        inline void w_double(double d) {
+            union { double d; Uint64 l; } swap;
+            swap.d = d;
+            *(long long*)buffer = SDL_SwapBE64(swap.l);
+            write(8);
         }
         inline bool r_bool() {
             read(1);
             return buffer[0];
+        }
+        inline void w_bool(bool flag) {
+            buffer[0] = flag ? '\1' : '\0';
+            write(1);
+        }
+        
+        
+        inline string8 r_string8() {
+            int len = r_short();
+            string8 str = new char[len+1];
+            if (SDLNet_TCP_Recv(socket, str, len) != len) {
+                working = false;
+            }
+            str[len] = '\0';
+            return str;
+        }
+        inline void w_string8(string8 str) {
+            int len = strlen(str);
+            w_short(len);
+            if (SDLNet_TCP_Send(socket, str, len) != len) {
+                working = false;
+            }
+        }
+        inline string16 r_string16() {
+            string16 res;
+            int len = r_short();
+            char *ucs2 = new char[len*2];
+            string16 str = new char[len*4+1]; //never allow an overflow
+            if (SDLNet_TCP_Recv(socket, ucs2, len*2) != len*2) {
+                working = false;
+                return NULL;
+            }
+            char *wchars = ucs2;
+            char *utf8chars = str;
+            for (int i = 0; i < len; i++, wchars += 2) {
+                int c = SDL_SwapBE16(*(Uint16*)wchars);
+                int s = ucs2_to_utf8(c,str);
+                if (s == -1) {
+                    std::cout << "UFT-8 conversion error\n";
+                    working = false;
+                    return NULL;
+                }   
+                utf8chars += s;
+            }
+            *utf8chars = '\0';
+            delete ucs2;
+            return str;
+        }
+        inline void w_string16(string16 str) {
+            int len = strlen(str);
+            short *ucs2 = new short[len];
+            short *chars = ucs2;
+            while (true) {
+                int c = utf8_to_ucs2(str,&str);
+                if (c <= 0) break;
+                *(chars++) = SDL_SwapBE16(c);
+            }
+            int nchars = chars - ucs2;
+            w_short(nchars);
+            if (SDLNet_TCP_Send(socket, ucs2, nchars*2) != nchars*2) {
+                working = false;
+            }
+            delete ucs2;
         }
         
         //Currently, this returns nothing useful
@@ -111,6 +235,10 @@ class SocketIO {
             }
             return result;
         }
+        //This is even more useless than the reader
+        inline void w_metadata(metadata *data) {
+            
+        }
         
         inline char* r_bytearray(int len) {
             char *array = new char[len];
@@ -119,6 +247,11 @@ class SocketIO {
             }
             return array;
         }
+        inline void w_bytearray(char* array, int len) {
+            if (SDLNet_TCP_Send(socket, array, len) != len) {
+                working = false;
+            }
+        }
         inline short* r_shortarray(int len) {
             short *array = new short[len];
             for (int i = 0; i < len; i++) {
@@ -126,9 +259,11 @@ class SocketIO {
             }
             return array;
         }
-
-
-
+        inline void w_shortarray(short* array, int len) {
+            if (SDLNet_TCP_Send(socket, array, len) != len) {
+                working = false;
+            }
+        }
 };
 
 int packets_thread(Client *client) {
@@ -670,22 +805,22 @@ int packets_thread(Client *client) {
 void free_packet(p_generic *p) {
     switch (p->id) {
         case 0x01:
-            delete ((p_login_request_stc*)p)->Unknown.str;
+            delete ((p_login_request_stc*)p)->Unknown;
             break;
         case 0x02:
-            delete ((p_handshake_stc*)p)->ConnectionHash.str;
+            delete ((p_handshake_stc*)p)->ConnectionHash;
             break;
         case 0x03:
-            delete ((p_chat_message*)p)->Message.str;
+            delete ((p_chat_message*)p)->Message;
             break;
         case 0x14:
-            delete ((p_spawn_player*)p)->Name.str;
+            delete ((p_spawn_player*)p)->Name;
             break;
         case 0x18:
             delete ((p_spawn_mob*)p)->Metadata;
             break;
         case 0x19:
-            delete ((p_painting*)p)->Title.str;
+            delete ((p_painting*)p)->Title;
             break;
         case 0x28:
             delete ((p_entity_metadata*)p)->Metadata;
@@ -699,29 +834,422 @@ void free_packet(p_generic *p) {
             delete ((p_multi_block_change*)p)->MetadataArray;
             break;
         case 0x64:
-            delete ((p_open_window*)p)->WindowTitle.str;
+            delete ((p_open_window*)p)->WindowTitle;
             break;
         case 0x82:
-            delete ((p_update_sign*)p)->Text1.str;
-            delete ((p_update_sign*)p)->Text2.str;
-            delete ((p_update_sign*)p)->Text3.str;
-            delete ((p_update_sign*)p)->Text4.str;
+            delete ((p_update_sign*)p)->Text1;
+            delete ((p_update_sign*)p)->Text2;
+            delete ((p_update_sign*)p)->Text3;
+            delete ((p_update_sign*)p)->Text4;
             break;
         case 0x83:
             delete ((p_map_data*)p)->Text;
             break;
         case 0xFF:
-            delete ((p_kick*)p)->Message.str;
+            delete ((p_kick*)p)->Message;
             break;
     }
     delete p;
 }
 
-bool write_packet(TCPsocket socket, p_generic *p) {
+bool write_packet(TCPsocket socket, p_generic *packet) {
     SocketIO io(socket);
     unsigned char pid = io.r_ubyte();
     switch (pid) {
-    
+        case 0x00:{
+            p_keep_alive *p = (p_keep_alive*)packet;
+        } break;
+        case 0x01:{
+            p_login_request_cts *p = (p_login_request_cts*)packet;
+            io.w_int(p->Version);
+            io.w_string16(p->Username);
+            io.w_long(p->MapSeed);
+            io.w_byte(p->Dimension);
+        } break;
+        case 0x02:{
+            p_handshake_cts *p = (p_handshake_cts*)packet;
+            io.w_string16(p->Username);
+        } break;
+        case 0x03:{
+            p_chat_message *p = (p_chat_message*)packet;
+            io.w_string16(p->Message);
+        } break;
+        case 0x04:{
+            p_time_update *p = (p_time_update*)packet;
+            io.w_long(p->Time);
+        } break;
+        case 0x05:{
+            p_entity_equipment *p = (p_entity_equipment*)packet;
+            io.w_int(p->EntityID);
+            io.w_short(p->Slot);
+            io.w_short(p->ItemID);
+            io.w_short(p->Damage);
+        } break;
+        case 0x06:{
+            p_spawn_position *p = (p_spawn_position*)packet;
+            io.w_int(p->X);
+            io.w_int(p->Y);
+            io.w_int(p->Z);
+        } break;
+        case 0x07:{
+            p_use_entity *p = (p_use_entity*)packet;
+            io.w_int(p->UserEID);
+        } break;
+        case 0x08:{
+            p_update_health *p = (p_update_health*)packet;
+            io.w_short(p->Health);
+        } break;
+        case 0x09:{
+            p_respawn *p = (p_respawn*)packet;
+            io.w_byte(p->World);
+        } break;
+        case 0x0A:{
+            p_player *p = (p_player*)packet;
+            io.w_bool(p->OnGround);
+        } break;
+        case 0x0B:{
+            p_player_position *p = (p_player_position*)packet;
+            io.w_double(p->X);
+            io.w_double(p->Y);
+            io.w_double(p->Stance);
+            io.w_double(p->Z);
+            io.w_bool(p->OnGround);
+        } break;
+        case 0x0C:{
+            p_player_look *p = (p_player_look*)packet;
+            io.w_float(p->Yaw);
+            io.w_float(p->Pitch);
+            io.w_bool(p->OnGround);
+        } break;
+        case 0x0D:{
+            p_player_position_and_look_cts *p = (p_player_position_and_look_cts*)packet;
+            io.w_double(p->X);
+            io.w_double(p->Y);
+            io.w_double(p->Stance);
+            io.w_double(p->Z);
+            io.w_float(p->Yaw);
+            io.w_float(p->Pitch);
+            io.w_bool(p->OnGround);
+        } break;
+        case 0x0E:{
+            p_player_digging *p = (p_player_digging*)packet;
+            io.w_byte(p->Status);
+            io.w_int(p->X);
+            io.w_byte(p->Y);
+            io.w_int(p->Z);
+            io.w_byte(p->Face);
+        } break;
+        case 0x0F:{
+            p_player_block_placement *p = (p_player_block_placement*)packet;
+            io.w_int(p->X);
+            io.w_byte(p->Y);
+            io.w_int(p->Z);
+            io.w_byte(p->Direction);
+            io.w_short(p->BlockID);
+            if (p->BlockID >= 0) {
+                io.w_byte(p->Amount);
+                io.w_short(p->Damage);
+            }
+        } break;
+        case 0x10:{
+            p_holding_change *p = (p_holding_change*)packet;
+            io.w_short(p->SlotID);
+        } break;
+        case 0x11:{
+            p_use_bed *p = (p_use_bed*)packet;
+            io.w_int(p->EntityID);
+            io.w_byte(p->InBed);
+            io.w_int(p->X);
+            io.w_byte(p->Y);
+            io.w_int(p->Z);
+        } break;
+        case 0x12:{
+            p_animate *p = (p_animate*)packet;
+            io.w_int(p->EntityID);
+            io.w_byte(p->Animate);
+        } break;
+        case 0x13:{
+            p_act *p = (p_act*)packet;
+            io.w_int(p->EntityID);
+            io.w_byte(p->Action);
+        } break;
+        case 0x14:{
+            p_spawn_player *p = (p_spawn_player*)packet;
+            io.w_int(p->EID);
+            io.w_string16(p->Name);
+            io.w_int(p->X);
+            io.w_int(p->Y);
+            io.w_int(p->Z);
+            io.w_byte(p->Yaw);
+            io.w_byte(p->Pitch);
+            io.w_short(p->CurrentItem);
+        } break;
+        case 0x15:{
+            p_pickup_spawn *p = (p_pickup_spawn*)packet;
+            io.w_int(p->EntityID);
+            io.w_short(p->Item);
+            io.w_byte(p->Count);
+            io.w_short(p->Damage);
+            io.w_int(p->X);
+            io.w_int(p->Y);
+            io.w_int(p->Z);
+            io.w_byte(p->Yaw);
+            io.w_byte(p->Pitch);
+            io.w_byte(p->Roll);
+        } break;
+        case 0x16:{
+            p_collect_item *p = (p_collect_item*)packet;
+            io.w_int(p->CollectedEID);
+            io.w_int(p->CollectorEID);
+        } break;
+        case 0x17:{
+            p_addobject *p = (p_addobject*)packet;
+            io.w_int(p->EntityID);
+            io.w_byte(p->Type);
+            io.w_int(p->X);
+            io.w_int(p->Y);
+            io.w_int(p->Z);
+            io.w_int(p->Flag);
+            if (p->Flag > 0) {
+                io.w_short(p->Xmap);
+                io.w_short(p->Ymap);
+                io.w_short(p->Zmap);
+            }
+        
+        } break;
+        case 0x18:{
+            p_spawn_mob *p = (p_spawn_mob*)packet;
+            io.w_int(p->EntityID);
+            io.w_byte(p->Type);
+            io.w_int(p->X);
+            io.w_int(p->Y);
+            io.w_int(p->Z);
+            io.w_byte(p->Yaw);
+            io.w_byte(p->Pitch);
+            io.w_metadata(p->Metadata);
+        } break;
+        case 0x19:{
+            p_painting *p = (p_painting*)packet;
+            io.w_int(p->EntityID);
+            io.w_string16(p->Title);
+            io.w_int(p->X);
+            io.w_int(p->Y);
+            io.w_int(p->Z);
+            io.w_int(p->Direction);
+        } break;
+        case 0x1B:{
+            p_stance_update *p = (p_stance_update*)packet;
+            io.w_float(p->A);
+            io.w_float(p->B);
+            io.w_float(p->C);
+            io.w_float(p->D);
+            io.w_bool(p->E);
+            io.w_bool(p->F);
+        } break;
+        case 0x1C:{
+            p_entity_velocity *p = (p_entity_velocity*)packet;
+            io.w_int(p->EntityID);
+        } break;
+        case 0x1D:{
+            p_destroy_entity *p = (p_destroy_entity*)packet;
+            io.w_int(p->EntityID);
+        } break;
+        case 0x1E:{
+            p_entity *p = (p_entity*)packet;
+            io.w_int(p->EntityID);
+        } break;
+        case 0x1F:{
+            p_entity_relative_move *p = (p_entity_relative_move*)packet;
+            io.w_int(p->EntityID);
+            io.w_byte(p->dX);
+            io.w_byte(p->dY);
+            io.w_byte(p->dZ);
+        } break;
+        case 0x20:{
+            p_entity_look *p = (p_entity_look*)packet;
+            io.w_int(p->EntityID);
+            io.w_byte(p->Yaw);
+            io.w_byte(p->Pitch);
+        } break;
+        case 0x21:{
+            p_entity_look_and_relative_move *p = (p_entity_look_and_relative_move*)packet;
+            io.w_int(p->EntityID);
+            io.w_byte(p->dX);
+            io.w_byte(p->dY);
+            io.w_byte(p->dZ);
+            io.w_byte(p->Yaw);
+            io.w_byte(p->Pitch);
+        } break;
+        case 0x22:{
+            p_entity_teleport *p = (p_entity_teleport*)packet;
+            io.w_int(p->EntityID);
+            io.w_int(p->X);
+            io.w_int(p->Y);
+            io.w_int(p->Z);
+            io.w_byte(p->Yaw);
+            io.w_byte(p->Pitch);
+        } break;
+        case 0x26:{
+            p_entity_status *p = (p_entity_status*)packet;
+            io.w_int(p->EntityID);
+            io.w_byte(p->Status);
+        } break;
+        case 0x27:{
+            p_attach_entity *p = (p_attach_entity*)packet;
+            io.w_int(p->EntityID);
+        } break;
+        case 0x28:{
+            p_entity_metadata *p = (p_entity_metadata*)packet;
+            io.w_int(p->EntityID);
+            io.w_metadata(p->Metadata);
+        } break;
+        case 0x32:{
+            p_prechunk *p = (p_prechunk*)packet;
+            io.w_int(p->X);
+            io.w_int(p->Z);
+            io.w_bool(p->Mode);
+        } break;
+        case 0x33:{
+            p_map_chunk *p = (p_map_chunk*)packet;
+            io.w_int(p->X);
+            io.w_short(p->Y);
+            io.w_int(p->Z);
+            io.w_byte(p->SizeX);
+            io.w_byte(p->SizeY);
+            io.w_byte(p->SizeZ);
+            io.w_int(p->CompressedSize);
+            io.w_bytearray(p->CompressedData,p->CompressedSize);
+        } break;
+        case 0x34:{
+            p_multi_block_change *p = (p_multi_block_change*)packet;
+            io.w_int(p->ChunkX);
+            io.w_int(p->ChunkZ);
+            io.w_short(p->ArraySize);
+            io.w_shortarray(p->CoordinateArray,p->ArraySize);
+            io.w_bytearray(p->TypeArray,p->ArraySize);
+            io.w_bytearray(p->MetadataArray,p->ArraySize);
+        } break;
+        case 0x35:{
+            p_block_change *p = (p_block_change*)packet;
+            io.w_int(p->X);
+            io.w_byte(p->Y);
+            io.w_int(p->Z);
+            io.w_byte(p->Type);
+            io.w_byte(p->Metadata);
+        } break;
+        case 0x36:{
+            p_block_action *p = (p_block_action*)packet;
+            io.w_int(p->X);
+            io.w_short(p->Y);
+            io.w_int(p->Z);
+            io.w_byte(p->DataA);
+            io.w_byte(p->DataB);
+        } break;
+        /*case 0x3C:{
+            p_explosion *p = (p_explosion*)packet;
+            io.w_double(p->X);
+            io.w_double(p->Y);
+            io.w_double(p->Z);
+            io.w_float(p->Unknown);
+            io.w_int(p->RecordCount);
+            io.w_(byte, byte, byte) × count(p->Records);
+        } break;*/
+        case 0x3D:{
+            p_sound_effect *p = (p_sound_effect*)packet;
+            io.w_int(p->EffectID);
+            io.w_int(p->X);
+            io.w_byte(p->Y);
+            io.w_int(p->Z);
+            io.w_int(p->SoundData);
+        } break;
+        case 0x46:{
+            p_new_state *p = (p_new_state*)packet;
+            io.w_byte(p->Reason);
+        } break;
+        case 0x47:{
+            p_thunderbolt *p = (p_thunderbolt*)packet;
+            io.w_int(p->EntityID);
+            io.w_bool(p->Unknown);
+            io.w_int(p->X);
+            io.w_int(p->Y);
+            io.w_int(p->Z);
+        } break;
+        case 0x64:{
+            p_open_window *p = (p_open_window*)packet;
+            io.w_byte(p->WindowID);
+            io.w_byte(p->InventoryType);
+            io.w_string8(p->WindowTitle);
+            io.w_byte(p->NumberOfSlots);
+        } break;
+        case 0x65:{
+            p_close_window *p = (p_close_window*)packet;
+            io.w_byte(p->WindowID);
+        } break;
+        case 0x66:{
+            p_window_click *p = (p_window_click*)packet;
+            io.w_byte(p->WindowID);
+            io.w_short(p->Slot);
+            io.w_byte(p->RightClick);
+            io.w_short(p->ActionNumber);
+            io.w_bool(p->Shift);
+            io.w_short(p->ItemID);
+            if (p->ItemID != -1) {
+                io.w_byte(p->ItemCount);
+                io.w_short(p->ItemUses);
+            }
+        } break;
+        case 0x67:{
+            p_set_slot *p = (p_set_slot*)packet;
+            io.w_byte(p->WindowID);
+            io.w_short(p->Slot);
+            io.w_short(p->ItemID);
+            io.w_byte(p->ItemCount);
+            io.w_short(p->ItemUses);
+        } break;
+        /*case 0x68:{
+            p_window_items! *p = (p_window_items!*)packet;
+            io.w_byte(p->WindowID);
+            io.w_short(p->Count);
+            io.w_…(p->Payload);
+        } break;*/
+        case 0x69:{
+            p_update_progress_bar *p = (p_update_progress_bar*)packet;
+            io.w_byte(p->WindowID);
+            io.w_short(p->ProgressBar);
+            io.w_short(p->Value);
+        } break;
+        case 0x6A:{
+            p_transaction *p = (p_transaction*)packet;
+            io.w_byte(p->WindowID);
+            io.w_short(p->ActionNumber);
+            io.w_bool(p->Accepted);
+        } break;
+        case 0x82:{
+            p_update_sign *p = (p_update_sign*)packet;
+            io.w_int(p->X);
+            io.w_short(p->Y);
+            io.w_int(p->Z);
+            io.w_string16(p->Text1);
+            io.w_string16(p->Text2);
+            io.w_string16(p->Text3);
+            io.w_string16(p->Text4);
+        } break;
+        case 0x83:{
+            p_map_data *p = (p_map_data*)packet;
+            io.w_short(p->UnknownA);
+            io.w_short(p->UnknownB);
+            io.w_ubyte(p->TextLength);
+            io.w_bytearray(p->Text,p->TextLength);
+        } break;
+        case 0xC8:{
+            p_increment_statistic *p = (p_increment_statistic*)packet;
+            io.w_int(p->StatisticID);
+            io.w_byte(p->Amount);
+        } break;
+        case 0xFF:{
+            p_kick *p = (p_kick*)packet;
+            io.w_string16(p->Message);
+        } break;
     }
     return io.working;
 }
