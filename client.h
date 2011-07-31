@@ -1,5 +1,8 @@
-#include "SDL/SDL_thread.h"
-#include "SDL/SDL_net.h"
+#ifndef _client
+#define _client
+
+#include "SDL_thread.h"
+#include "SDL_net.h"
 
 class Client {
     public:
@@ -10,6 +13,7 @@ class Client {
         virtual ~Client();
         
         bool connect(char *host, int port = 25565);
+        void disconnect();
         bool login(char *username);
         
         bool running();
@@ -25,3 +29,6 @@ class Client {
     friend int physics_thread(Client *client);
     friend int packets_thread(Client *client);
 };
+
+#endif
+

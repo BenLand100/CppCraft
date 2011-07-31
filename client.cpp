@@ -1,6 +1,6 @@
 #include <iostream>
 #include "client.h"
-
+#include "packets.h"
 
 Client::Client() {
     connected = false;
@@ -14,19 +14,11 @@ Client::Client() {
 Client::~Client() {
     doPackets = false;
     doPhysics = false;
-    connected = false;
     if (physics) SDL_WaitThread(physics, NULL);
     if (packets) SDL_WaitThread(packets, NULL);
-    if (socket) SDLNet_TCP_Close(socket);
+    disconnect();
 }
         
-int packets_thread(Client *client) {
-    while (client->doPackets) {
-    
-    }
-    return 0;
-}
-
 bool Client::connect(char *host, int port) {
     if (!socket) {
         IPaddress ip;
@@ -46,6 +38,11 @@ bool Client::connect(char *host, int port) {
     } else {
         return false;
     }
+}
+
+void Client::disconnect() {
+    connected = false;
+    if (socket) SDLNet_TCP_Close(socket);
 }
 
 bool Client::login(char *username) {
