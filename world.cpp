@@ -1,5 +1,6 @@
 #include "world.h"
 #include <iostream>
+#include "zlib.h"
 
 Block::Block() : type(0) {
 
@@ -16,8 +17,34 @@ Chunk::~Chunk() {
 }
 
 bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, char *cdata) {
-    //std::cout << "Parse chunk data...\n";
-    return false;
+    z_stream strm;
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+    strm.avail_in = 0;
+    strm.next_in = Z_NULL;
+    int ret = inflateInit(&strm);
+    if (ret != Z_OK) return false;
+    
+    strm.avail_in = size;
+    strm.next_in = (unsigned char*) cdata;
+    
+    int len = (sz+1)*(sy+1)*(sz+1)*2;
+    unsigned char *data = new unsigned char[len];
+    
+    strm.avail_out = len;
+    strm.next_out = data;
+    
+    do {
+        ret = inflate(&strm, Z_NO_FLUSH);
+    } while (strm.avail_out != 0 && ret == Z_OK);
+    inflateEnd(&strm);
+    if (ret != Z_OK) return false;
+    
+    //DO STUFF WITH THE DATA
+    
+    delete data;
+    return true;
 }
 
 World::World() {

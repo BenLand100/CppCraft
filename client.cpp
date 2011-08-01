@@ -97,7 +97,11 @@ void Client::packet(p_generic *p) {
         case 0x33:
             {
                 p_map_chunk *update = (p_map_chunk*)p;
-                world.updateChunk(update->X,update->Y,update->Z,update->SizeX,update->SizeY,update->SizeZ,update->CompressedSize,update->CompressedData);
+                bool res = world.updateChunk(update->X,update->Y,update->Z,update->SizeX,update->SizeY,update->SizeZ,update->CompressedSize,update->CompressedData);
+                if (!res) {
+                    std::cout << "Error performing chunk update\n";
+                    disconnect();
+                }
             }
             break;
         case 0xFF:
