@@ -9,7 +9,8 @@ Client::Client() {
     physics = NULL;
     doPackets = false;
     packets = NULL;
-    username = NULL;
+    us = NULL;
+    onGround = false;
 }
 
 Client::~Client() {
@@ -41,6 +42,15 @@ bool Client::connect(char *host, int port) {
     }
 }
 
+int physics_thread(Client *client) {
+    while (client->doPhysics) {
+        SDL_Delay(50);
+        //lolphysics
+        client->sendPos();
+    }
+    return 0;
+}
+
 void Client::packet(p_generic *p) {
     switch (p->id) {
         case 0x00:
@@ -50,13 +60,27 @@ void Client::packet(p_generic *p) {
             std::cout << "Logged In! EID: " << std::dec <<((p_login_request_stc*)p)->EntityID << '\n';
             break;
         case 0x02:
-            send_login_request_cts(socket,14,username,0,0);
+            send_login_request_cts(socket,14,us->name,0,0);
             break;
         case 0x03:
             std::cout << "Chat: " << ((p_chat_message*)p)->Message << '\n';
             break;
         case 0x0D:
-            std::cout << "Updating position\n";
+            {
+                p_player_position_and_look_stc *pos = (p_player_position_and_look_stc*)p;
+                onGround = pos->OnGround;
+                us->x = pos->X;
+                us->y = pos->Y;
+                us->z = pos->Z;
+                us->height = pos->Stance - pos->Y;
+                us->pitch = pos->Pitch;
+                us->yaw = pos->Yaw;
+                sendPos();
+            }
+            if (!physics) {
+                doPhysics = true;
+                physics = SDL_CreateThread((int (*)(void*))physics_thread, this);
+            }
             break;
         case 0x18:
             break;
@@ -68,7 +92,11 @@ void Client::packet(p_generic *p) {
         case 0x21:
         case 0x22:
             break;
-        case 0x32: break;
+        case 0x32: 
+            break;
+        case 0x33:
+            std::cout << "We got chunks!\n";
+            break;
         default:
             std::cout << "Unhandled Packet: 0x" << std::hex << (int)p->id << '\n';
     }
@@ -78,16 +106,14 @@ void Client::disconnect() {
     connected = false;
     if (socket) SDLNet_TCP_Close(socket);
     socket = NULL;
-    if (username) delete username;
-    username = NULL;
+    if (us) delete us;
+    us = NULL;
 }
 
 bool Client::login(char *username) {
-    if (!this->username) {
-        int len = strlen(username);
-        this->username = new char[len+1];
-        strcpy(this->username,username);
-        send_handshake_cts(socket,username);
+    if (!us) {
+        us = new Player(username);
+        send_handshake_cts(socket,us->name);
     }
 }
 
@@ -96,15 +122,7 @@ bool Client::running() {
 }
 
 void Client::sendPos() {
-}
-
-
-int physics_thread(Client *client) {
-    while (client->doPhysics) {
-        //lolphysics
-        client->sendPos();
-    }
-    return 0;
+    send_player_position_and_look_cts(socket,us->x,us->y,us->height+us->y,us->z,us->pitch,us->yaw,onGround);
 }
 
 void Client::init() {

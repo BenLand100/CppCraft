@@ -4,6 +4,7 @@
 #include "SDL_thread.h"
 #include "SDL_net.h"
 #include "packets.h"
+#include "entities.h"
 
 class Client {
     public:
@@ -20,7 +21,8 @@ class Client {
         bool running();
         
     private:
-        char *username;
+        Player *us;
+        bool onGround;
         bool connected;
         TCPsocket socket;
         bool doPhysics,doPackets;

@@ -191,7 +191,7 @@ typedef struct { unsigned char id; string16 Message;} p_kick;
         p.Z = (_Z); \
         p.Yaw = (_Yaw); \
         p.Pitch = (_Pitch); \
-        p.On Ground = (_OnGround); \
+        p.OnGround = (_OnGround); \
         write_packet(sock,(p_generic*)&p); \
     }
 #define send_player_position_and_look_stc(sock,_X,_Stance,_Y,_Z,_Yaw,_Pitch,_OnGround) { \

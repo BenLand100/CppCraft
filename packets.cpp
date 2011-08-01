@@ -964,7 +964,7 @@ bool write_packet(TCPsocket socket, p_generic *packet) {
     SocketIO io(socket);
     unsigned char pid = packet->id;
     io.w_ubyte(pid);
-    std::cout << "Sending Packet 0x" << std::hex << (int)pid << '\n';
+    //std::cout << "Sending Packet 0x" << std::hex << (int)pid << '\n';
     switch (pid) {
         case 0x00:{
             p_keep_alive *p = (p_keep_alive*)packet;
