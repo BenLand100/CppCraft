@@ -14,10 +14,6 @@ Client::Client() {
 }
 
 Client::~Client() {
-    doPackets = false;
-    doPhysics = false;
-    if (physics) SDL_WaitThread(physics, NULL);
-    if (packets) SDL_WaitThread(packets, NULL);
     disconnect();
 }
         
@@ -104,6 +100,10 @@ void Client::packet(p_generic *p) {
                 world.updateChunk(update->X,update->Y,update->Z,update->SizeX,update->SizeY,update->SizeZ,update->CompressedSize,update->CompressedData);
             }
             break;
+        case 0xFF:
+            std::cout << "KICK: " << ((p_kick*)p)->Message << '\n';
+            disconnect();
+            break;
         default:
             std::cout << "Unhandled Packet: 0x" << std::hex << (int)p->id << '\n';
     }
@@ -111,6 +111,12 @@ void Client::packet(p_generic *p) {
 }
 
 void Client::disconnect() {
+    doPackets = false;
+    doPhysics = false;
+    if (physics) SDL_WaitThread(physics, NULL);
+    if (packets) SDL_WaitThread(packets, NULL);
+    physics = NULL;
+    packets = NULL;
     connected = false;
     if (socket) SDLNet_TCP_Close(socket);
     socket = NULL;

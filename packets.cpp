@@ -177,7 +177,7 @@ class SocketIO {
             char *utf8chars = str;
             for (int i = 0; i < len; i++, wchars += 2) {
                 int c = SDL_SwapBE16(*(Uint16*)wchars);
-                int s = ucs2_to_utf8(c,str);
+                int s = ucs2_to_utf8(c,utf8chars);
                 if (s == -1) {
                     std::cout << "UFT-8 conversion error\n";
                     working = false;
