@@ -52,6 +52,22 @@ void Client::packet(p_generic *p) {
         case 0x02:
             send_login_request_cts(socket,14,username,0,0);
             break;
+        case 0x03:
+            std::cout << "Chat: " << ((p_chat_message*)p)->Message << '\n';
+            break;
+        case 0x0D:
+            std::cout << "Updating position\n";
+            break;
+        case 0x18:
+            break;
+        case 0x1C:
+        case 0x1D:
+        case 0x1E:
+        case 0x1F:
+        case 0x20:
+        case 0x21:
+        case 0x22:
+            break;
         case 0x32: break;
         default:
             std::cout << "Unhandled Packet: 0x" << std::hex << (int)p->id << '\n';

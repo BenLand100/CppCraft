@@ -12,6 +12,7 @@ bool write_packet(TCPsocket socket, p_generic *p);
 typedef char* string8;
 typedef char* string16;
 typedef struct { /* yep, doesn't do anything yet */ } metadata;
+typedef struct { short itemid; char count; short uses; } item;
 
 typedef struct { unsigned char id; } p_keep_alive;
 typedef struct { unsigned char id; int Version; string16 Username; long MapSeed; char Dimension;} p_login_request_cts;
@@ -58,7 +59,7 @@ typedef struct { unsigned char id; int X; short Y; int Z; char SizeX; char SizeY
 typedef struct { unsigned char id; int ChunkX; int ChunkZ; short ArraySize; short* CoordinateArray; char* TypeArray; char* MetadataArray;} p_multi_block_change;
 typedef struct { unsigned char id; int X; char Y; int Z; char Type; char Metadata;} p_block_change;
 typedef struct { unsigned char id; int X; short Y; int Z; char DataA; char DataB;} p_block_action;
-//typedef struct { unsigned char id; double X; double Y; double Z; float Unknown; int RecordCount; (char, char, char) × count Records;} p_explosion;
+typedef struct { unsigned char id; double X; double Y; double Z; float Unknown; int RecordCount; char *Records;} p_explosion;
 typedef struct { unsigned char id; int EffectID; int X; char Y; int Z; int SoundData;} p_sound_effect;
 typedef struct { unsigned char id; char Reason;} p_new_state;
 typedef struct { unsigned char id; int EntityID; bool Unknown; int X; int Y; int Z;} p_thunderbolt;
@@ -66,7 +67,7 @@ typedef struct { unsigned char id; char WindowID; char InventoryType; string8 Wi
 typedef struct { unsigned char id; char WindowID;} p_close_window;
 typedef struct { unsigned char id; char WindowID; short Slot; char RightClick; short ActionNumber; bool Shift; short ItemID; char ItemCount; short ItemUses;} p_window_click;
 typedef struct { unsigned char id; char WindowID; short Slot; short ItemID; char ItemCount; short ItemUses;} p_set_slot;
-//typedef struct { unsigned char id; char WindowID; short Count; … Payload;} p_window_items;
+typedef struct { unsigned char id; char WindowID; short Count; item *items;} p_window_items;
 typedef struct { unsigned char id; char WindowID; short ProgressBar; short Value;} p_update_progress_bar;
 typedef struct { unsigned char id; char WindowID; short ActionNumber; bool Accepted;} p_transaction;
 typedef struct { unsigned char id; int X; short Y; int Z; string16 Text1; string16 Text2; string16 Text3; string16 Text4;} p_update_sign;
@@ -548,12 +549,12 @@ typedef struct { unsigned char id; string16 Message;} p_kick;
         p.ItemUses = (_ItemUses); \
         write_packet(sock,(p_generic*)&p); \
     }
-#define send_window_items(sock,_WindowID,_Count,_Payload) { \
+#define send_window_items(sock,_WindowID,_Count,_Items) { \
         p_window_items p; \
         p.id = 0x68; \
         p.WindowID = (_WindowID); \
         p.Count = (_Count); \
-        p.Payload = (_Payload); \
+        p.items = (_Items); \
         write_packet(sock,(p_generic*)&p); \
     }
 #define send_update_progress_bar(sock,_WindowID,_ProgressBar,_Value) { \

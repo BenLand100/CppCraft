@@ -55,13 +55,14 @@ class SocketIO {
             int read = 0, cur;
             for (;;) { //Supposedly SDL should wait for the whole length, in practice however...
                 cur = SDLNet_TCP_Recv(socket, &buffer[read], len);
-                if (cur == -1) {
+                if (cur == -1 || cur == 0) {
                     for (int i = 0; i < 16; i++) buffer[i] = 0;
                     working = false;
+                    return;
                 }
                 len -= cur;
                 if (len == 0) return;
-                std::cout << "lols\n";
+                std::cout << std::dec << cur << " bytes read - readunder\n";
                 read += cur;
             }
         }
@@ -246,6 +247,32 @@ class SocketIO {
         //This is even more useless than the reader
         inline void w_metadata(metadata *data) {
             
+        }
+        
+        //Currently, this returns nothing useful
+        inline item* r_itemarray(int len) {
+            item *result = new item[len];
+            for (int i = 0; i < len; i++) {
+                result[i].itemid = r_short();
+                if (result[i].itemid != -1) {
+                    result[i].count = r_byte();
+                    result[i].uses = r_short();
+                } else {
+                    result[i].count = 0;
+                    result[i].uses = 0;
+                }
+            }
+            return result;
+        }
+        //This is even more useless than the reader
+        inline void w_itemarray(item *data, int len) {
+            for (int i = 0; i < len; i++) {
+                w_short(data[i].itemid);
+                if (data[i].itemid != -1) {
+                     w_byte(data[i].count);
+                     w_short(data[i].uses);
+                }
+            }
         }
         
         inline char* r_bytearray(int len) {
@@ -706,18 +733,18 @@ int packets_thread(Client *client) {
                 p->id = pid;
                 client->packet((p_generic*)p);
             } break;
-            /*case 0x3C:{
+            case 0x3C:{
                 p_explosion *p = new p_explosion;
                 p->X = io.r_double();
                 p->Y = io.r_double();
                 p->Z = io.r_double();
                 p->Unknown = io.r_float();
                 p->RecordCount = io.r_int();
-                p->Records = io.r_(byte, byte, byte) × count();
+                p->Records = io.r_bytearray(p->RecordCount*3);
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
-            } break;*/
+            } break;
             case 0x3D:{
                 p_sound_effect *p = new p_sound_effect;
                 p->EffectID = io.r_int();
@@ -788,21 +815,26 @@ int packets_thread(Client *client) {
                 p->WindowID = io.r_byte();
                 p->Slot = io.r_short();
                 p->ItemID = io.r_short();
-                p->ItemCount = io.r_byte();
-                p->ItemUses = io.r_short();
+                if (p->ItemID != -1) {
+                    p->ItemCount = io.r_byte();
+                    p->ItemUses = io.r_short();
+                } else {
+                    p->ItemCount = -1;
+                    p->ItemUses = -1;
+                }
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
             } break;
-            /*case 0x68:{
-                p_window_items! *p = new p_window_items!;
+            case 0x68:{
+                p_window_items *p = new p_window_items;
                 p->WindowID = io.r_byte();
                 p->Count = io.r_short();
-                p->Payload = io.r_…();
+                p->items = io.r_itemarray(p->Count);
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
-            } break;*/
+            } break;
             case 0x69:{
                 p_update_progress_bar *p = new p_update_progress_bar;
                 p->WindowID = io.r_byte();
@@ -903,8 +935,14 @@ void free_packet(p_generic *p) {
             delete ((p_multi_block_change*)p)->TypeArray;
             delete ((p_multi_block_change*)p)->MetadataArray;
             break;
+        case 0x3C:
+            delete ((p_explosion*)p)->Records;
+            break;
         case 0x64:
             delete ((p_open_window*)p)->WindowTitle;
+            break;
+        case 0x68:
+            delete ((p_window_items*)p)->items;
             break;
         case 0x82:
             delete ((p_update_sign*)p)->Text1;
@@ -1220,15 +1258,15 @@ bool write_packet(TCPsocket socket, p_generic *packet) {
             io.w_byte(p->DataA);
             io.w_byte(p->DataB);
         } break;
-        /*case 0x3C:{
+        case 0x3C:{
             p_explosion *p = (p_explosion*)packet;
             io.w_double(p->X);
             io.w_double(p->Y);
             io.w_double(p->Z);
             io.w_float(p->Unknown);
             io.w_int(p->RecordCount);
-            io.w_(byte, byte, byte) × count(p->Records);
-        } break;*/
+            io.w_bytearray(p->Records,p->RecordCount*3);
+        } break;
         case 0x3D:{
             p_sound_effect *p = (p_sound_effect*)packet;
             io.w_int(p->EffectID);
@@ -1278,15 +1316,17 @@ bool write_packet(TCPsocket socket, p_generic *packet) {
             io.w_byte(p->WindowID);
             io.w_short(p->Slot);
             io.w_short(p->ItemID);
-            io.w_byte(p->ItemCount);
-            io.w_short(p->ItemUses);
+            if (p->ItemID != -1) {
+                io.w_byte(p->ItemCount);
+                io.w_short(p->ItemUses);
+            }
         } break;
-        /*case 0x68:{
-            p_window_items! *p = (p_window_items!*)packet;
+        case 0x68:{
+            p_window_items *p = (p_window_items*)packet;
             io.w_byte(p->WindowID);
             io.w_short(p->Count);
-            io.w_…(p->Payload);
-        } break;*/
+            io.w_itemarray(p->items,p->Count);
+        } break;
         case 0x69:{
             p_update_progress_bar *p = (p_update_progress_bar*)packet;
             io.w_byte(p->WindowID);
