@@ -1,6 +1,9 @@
 #ifndef _world
 #define _world
 
+#include "SDL_mutex.h"
+#include <map>
+
 //Coordinates of the chunk that contains the position
 inline void chunkPos(int x, int y, int z, int &cx, int &cy, int &cz) {
     cx = x >> 4;
@@ -36,6 +39,21 @@ inline void blockPos(double x, double y, double z, int &bx, int &by, int &bz) {
     bz = (int)z;
 }
 
+class ChunkPos {
+    public:
+        int cx,cy,cz;
+        inline ChunkPos(int _cx, int _cy, int _cz) : cx(_cx), cy(_cy), cz(_cz) { }
+        inline bool operator<(const ChunkPos &pos) const {
+            //damn strict weak ordering
+            if (cx != pos.cx) return (cx < pos.cx);
+            if (cz != pos.cz) return (cz < pos.cz);
+            return (cy < pos.cy);
+        }
+        inline bool operator==(const ChunkPos &pos) const {
+            return (pos.cx == cx) && (pos.cz == cz) && (pos.cy == cy);
+        }
+};
+
 class Block {
     public:
         Block();
@@ -68,11 +86,19 @@ class World {
         Block* getBlock(int x, int y, int z); //get block if it exists (if many are needed, use getChunk, it's faster)
         Chunk* getChunk(int x, int y, int z); //get chunk containing block if it exists
         
-        void resetChunks();
+        void clearChunks();
         
         bool initChunk(int cx, int cy, int cz); //does nothing since not always sent anyway
         bool updateChunk(int x, int y, int z, int sx, int sy, int sz, int size, char *cdata); //position in world coords. unknown if it can cross chunk boundaries (this will fail if it does)
-        bool deleteChunk(int cx, int cy, int cz); 
+        bool deleteChunk(int cx, int cy, int cz);
+        
+        void lock();
+        void unlock();
+        
+        
+    private:
+        std::map<ChunkPos,Chunk*> chunks;
+        SDL_mutex *chunklock;
 
 };
 

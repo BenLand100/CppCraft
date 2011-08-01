@@ -87,7 +87,7 @@ void Client::packet(p_generic *p) {
         case 0x20:
         case 0x21:
         case 0x22:
-            break;
+            break; //ignore entity motion stuff for now
         case 0x32: 
             {
                 p_prechunk *prechunk = (p_prechunk*)p;
@@ -122,7 +122,7 @@ void Client::disconnect() {
     socket = NULL;
     if (us) delete us;
     us = NULL;
-    world.resetChunks();
+    world.clearChunks();
 }
 
 bool Client::login(char *username) {
