@@ -9,6 +9,7 @@ Client::Client() {
     physics = NULL;
     doPackets = false;
     packets = NULL;
+    username = NULL;
 }
 
 Client::~Client() {
@@ -41,16 +42,37 @@ bool Client::connect(char *host, int port) {
 }
 
 void Client::packet(p_generic *p) {
-    std::cout << "Unhandled Packet: 0x" << std::hex << (int)p->id << '\n';
+    switch (p->id) {
+        case 0x00:
+            send_keep_alive(socket);
+            break;
+        case 0x01:
+            std::cout << "Logged In! EID: " << std::dec <<((p_login_request_stc*)p)->EntityID << '\n';
+            break;
+        case 0x02:
+            send_login_request_cts(socket,14,username,0,0);
+            break;
+        case 0x32: break;
+        default:
+            std::cout << "Unhandled Packet: 0x" << std::hex << (int)p->id << '\n';
+    }
 }
 
 void Client::disconnect() {
     connected = false;
     if (socket) SDLNet_TCP_Close(socket);
+    socket = NULL;
+    if (username) delete username;
+    username = NULL;
 }
 
 bool Client::login(char *username) {
-    
+    if (!this->username) {
+        int len = strlen(username);
+        this->username = new char[len+1];
+        strcpy(this->username,username);
+        send_handshake_cts(socket,username);
+    }
 }
 
 bool Client::running() {
@@ -86,7 +108,6 @@ int main(int argc, char** argv) {
 
     Client *c = new Client();
     if (c->connect((char*)"localhost") && c->login((char*)"YourMom")) {
-        std::cout << "Client initilized!\n";
         while (c->running()) {
             SDL_Delay(1000);
         }

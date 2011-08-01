@@ -43,7 +43,7 @@ typedef struct { unsigned char id; int EntityID; char Type; int X; int Y; int Z;
 typedef struct { unsigned char id; int EntityID; char Type; int X; int Y; int Z; char Yaw; char Pitch; metadata *Metadata;} p_spawn_mob;
 typedef struct { unsigned char id; int EntityID; string16 Title; int X; int Y; int Z; int Direction;} p_painting;
 typedef struct { unsigned char id; float A; float B; float C; float D; bool E; bool F;} p_stance_update;
-typedef struct { unsigned char id; int EntityID;} p_entity_velocity;
+typedef struct { unsigned char id; int EntityID; short vx; short vy; short vz; } p_entity_velocity;
 typedef struct { unsigned char id; int EntityID;} p_destroy_entity;
 typedef struct { unsigned char id; int EntityID;} p_entity;
 typedef struct { unsigned char id; int EntityID; char dX; char dY; char dZ;} p_entity_relative_move;
@@ -78,7 +78,7 @@ typedef struct { unsigned char id; string16 Message;} p_kick;
 #define send_keep_alive(sock) { \
         p_keep_alive p; \
         p.id = 0x00; \
-        write_packet(sock,sock,(p_generic*)&p); \
+        write_packet(sock,(p_generic*)&p); \
     }
 #define send_login_request_cts(sock,_Version,_Username,_MapSeed,_Dimension) { \
         p_login_request_cts p; \
@@ -341,10 +341,13 @@ typedef struct { unsigned char id; string16 Message;} p_kick;
         p.F = (_F); \
         write_packet(sock,(p_generic*)&p); \
     }
-#define send_entity_velocity(sock,_EntityID) { \
+#define send_entity_velocity(sock,_EntityID,_vx,_vy,_vz) { \
         p_entity_velocity p; \
         p.id = 0x1C; \
         p.EntityID = (_EntityID); \
+        p.vx = (_vx); \
+        p.vy = (_vy); \
+        p.vz = (_vz); \
         write_packet(sock,(p_generic*)&p); \
     }
 #define send_destroy_entity(sock,_EntityID) { \

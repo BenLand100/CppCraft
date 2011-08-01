@@ -52,9 +52,17 @@ class SocketIO {
         TCPsocket socket;
         unsigned char buffer[16];
         inline void read(int len) {
-            if (SDLNet_TCP_Recv(socket, buffer, len) != len) {
-                working = false;
-                for (int i = 0; i < 16; i++) buffer[i] = 0;
+            int read = 0, cur;
+            for (;;) { //Supposedly SDL should wait for the whole length, in practice however...
+                cur = SDLNet_TCP_Recv(socket, &buffer[read], len);
+                if (cur == -1) {
+                    for (int i = 0; i < 16; i++) buffer[i] = 0;
+                    working = false;
+                }
+                len -= cur;
+                if (len == 0) return;
+                std::cout << "lols\n";
+                read += cur;
             }
         }
         inline void write(int len) {
@@ -268,13 +276,16 @@ class SocketIO {
 
 int packets_thread(Client *client) {
     SocketIO io(client->socket);
+    unsigned char pid;
     while (client->doPackets && io.working) {
-        unsigned char pid = io.r_ubyte();
+        pid = io.r_ubyte();
+        //std::cout << "Parsing 0x" << std::hex << (int)pid << '\n';
         if (!io.working) break;
         switch (pid) {
             case 0x00:{
                 p_keep_alive *p = new p_keep_alive;
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x01:{
@@ -284,24 +295,28 @@ int packets_thread(Client *client) {
                 p->MapSeed = io.r_long();
                 p->Dimension = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x02:{
                 p_handshake_stc *p = new p_handshake_stc;
                 p->ConnectionHash = io.r_string16();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x03:{
                 p_chat_message *p = new p_chat_message;
                 p->Message = io.r_string16();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x04:{
                 p_time_update *p = new p_time_update;
                 p->Time = io.r_long();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x05:{
@@ -311,6 +326,7 @@ int packets_thread(Client *client) {
                 p->ItemID = io.r_short();
                 p->Damage = io.r_short();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x06:{
@@ -319,30 +335,35 @@ int packets_thread(Client *client) {
                 p->Y = io.r_int();
                 p->Z = io.r_int();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x07:{
                 p_use_entity *p = new p_use_entity;
                 p->UserEID = io.r_int();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x08:{
                 p_update_health *p = new p_update_health;
                 p->Health = io.r_short();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x09:{
                 p_respawn *p = new p_respawn;
                 p->World = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x0A:{
                 p_player *p = new p_player;
                 p->OnGround = io.r_bool();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x0B:{
@@ -353,6 +374,7 @@ int packets_thread(Client *client) {
                 p->Z = io.r_double();
                 p->OnGround = io.r_bool();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x0C:{
@@ -361,6 +383,7 @@ int packets_thread(Client *client) {
                 p->Pitch = io.r_float();
                 p->OnGround = io.r_bool();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x0D:{
@@ -373,6 +396,7 @@ int packets_thread(Client *client) {
                 p->Pitch = io.r_float();
                 p->OnGround = io.r_bool();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x0E:{
@@ -383,6 +407,7 @@ int packets_thread(Client *client) {
                 p->Z = io.r_int();
                 p->Face = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x0F:{
@@ -400,12 +425,14 @@ int packets_thread(Client *client) {
                     p->Damage = -1;
                 }
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x10:{
                 p_holding_change *p = new p_holding_change;
                 p->SlotID = io.r_short();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x11:{
@@ -416,6 +443,7 @@ int packets_thread(Client *client) {
                 p->Y = io.r_byte();
                 p->Z = io.r_int();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x12:{
@@ -423,6 +451,7 @@ int packets_thread(Client *client) {
                 p->EntityID = io.r_int();
                 p->Animate = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x13:{
@@ -430,6 +459,7 @@ int packets_thread(Client *client) {
                 p->EntityID = io.r_int();
                 p->Action = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x14:{
@@ -443,6 +473,7 @@ int packets_thread(Client *client) {
                 p->Pitch = io.r_byte();
                 p->CurrentItem = io.r_short();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x15:{
@@ -458,6 +489,7 @@ int packets_thread(Client *client) {
                 p->Pitch = io.r_byte();
                 p->Roll = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x16:{
@@ -465,6 +497,7 @@ int packets_thread(Client *client) {
                 p->CollectedEID = io.r_int();
                 p->CollectorEID = io.r_int();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x17:{
@@ -485,6 +518,7 @@ int packets_thread(Client *client) {
                     p->Zmap = 0;
                 }
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x18:{
@@ -498,6 +532,7 @@ int packets_thread(Client *client) {
                 p->Pitch = io.r_byte();
                 p->Metadata = io.r_metadata();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x19:{
@@ -509,6 +544,7 @@ int packets_thread(Client *client) {
                 p->Z = io.r_int();
                 p->Direction = io.r_int();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x1B:{
@@ -520,24 +556,31 @@ int packets_thread(Client *client) {
                 p->E = io.r_bool();
                 p->F = io.r_bool();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x1C:{
                 p_entity_velocity *p = new p_entity_velocity;
                 p->EntityID = io.r_int();
+                p->vx = io.r_short();
+                p->vy = io.r_short();
+                p->vz = io.r_short();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x1D:{
                 p_destroy_entity *p = new p_destroy_entity;
                 p->EntityID = io.r_int();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x1E:{
                 p_entity *p = new p_entity;
                 p->EntityID = io.r_int();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x1F:{
@@ -547,6 +590,7 @@ int packets_thread(Client *client) {
                 p->dY = io.r_byte();
                 p->dZ = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x20:{
@@ -555,6 +599,7 @@ int packets_thread(Client *client) {
                 p->Yaw = io.r_byte();
                 p->Pitch = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x21:{
@@ -566,6 +611,7 @@ int packets_thread(Client *client) {
                 p->Yaw = io.r_byte();
                 p->Pitch = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x22:{
@@ -577,6 +623,7 @@ int packets_thread(Client *client) {
                 p->Yaw = io.r_byte();
                 p->Pitch = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x26:{
@@ -584,12 +631,14 @@ int packets_thread(Client *client) {
                 p->EntityID = io.r_int();
                 p->Status = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x27:{
                 p_attach_entity *p = new p_attach_entity;
                 p->EntityID = io.r_int();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x28:{
@@ -597,6 +646,7 @@ int packets_thread(Client *client) {
                 p->EntityID = io.r_int();
                 p->Metadata = io.r_metadata();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x32:{
@@ -605,6 +655,7 @@ int packets_thread(Client *client) {
                 p->Z = io.r_int();
                 p->Mode = io.r_bool();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x33:{
@@ -618,6 +669,7 @@ int packets_thread(Client *client) {
                 p->CompressedSize = io.r_int();
                 p->CompressedData = io.r_bytearray(p->CompressedSize);
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x34:{
@@ -629,6 +681,7 @@ int packets_thread(Client *client) {
                 p->TypeArray = io.r_bytearray(p->ArraySize);
                 p->MetadataArray = io.r_bytearray(p->ArraySize);
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x35:{
@@ -639,6 +692,7 @@ int packets_thread(Client *client) {
                 p->Type = io.r_byte();
                 p->Metadata = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x36:{
@@ -649,6 +703,7 @@ int packets_thread(Client *client) {
                 p->DataA  = io.r_byte();
                 p->DataB = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             /*case 0x3C:{
@@ -660,6 +715,7 @@ int packets_thread(Client *client) {
                 p->RecordCount = io.r_int();
                 p->Records = io.r_(byte, byte, byte) × count();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;*/
             case 0x3D:{
@@ -670,12 +726,14 @@ int packets_thread(Client *client) {
                 p->Z = io.r_int();
                 p->SoundData = io.r_int();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x46:{
                 p_new_state *p = new p_new_state;
                 p->Reason = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x47:{
@@ -686,6 +744,7 @@ int packets_thread(Client *client) {
                 p->Y = io.r_int();
                 p->Z = io.r_int();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x64:{
@@ -695,12 +754,14 @@ int packets_thread(Client *client) {
                 p->WindowTitle = io.r_string8();
                 p->NumberOfSlots = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x65:{
                 p_close_window *p = new p_close_window;
                 p->WindowID = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x66:{
@@ -719,6 +780,7 @@ int packets_thread(Client *client) {
                     p->ItemUses = -1;
                 }
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x67:{
@@ -729,6 +791,7 @@ int packets_thread(Client *client) {
                 p->ItemCount = io.r_byte();
                 p->ItemUses = io.r_short();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             /*case 0x68:{
@@ -737,6 +800,7 @@ int packets_thread(Client *client) {
                 p->Count = io.r_short();
                 p->Payload = io.r_…();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;*/
             case 0x69:{
@@ -745,6 +809,7 @@ int packets_thread(Client *client) {
                 p->ProgressBar = io.r_short();
                 p->Value = io.r_short();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x6A:{
@@ -753,6 +818,7 @@ int packets_thread(Client *client) {
                 p->ActionNumber = io.r_short();
                 p->Accepted = io.r_bool();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x82:{
@@ -765,6 +831,7 @@ int packets_thread(Client *client) {
                 p->Text3 = io.r_string16();
                 p->Text4 = io.r_string16();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0x83:{
@@ -774,6 +841,7 @@ int packets_thread(Client *client) {
                 p->TextLength = io.r_ubyte();
                 p->Text = io.r_bytearray(p->TextLength);
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0xC8:{
@@ -781,22 +849,24 @@ int packets_thread(Client *client) {
                 p->StatisticID = io.r_int();
                 p->Amount = io.r_byte();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             case 0xFF:{
                 p_kick *p = new p_kick;
                 p->Message = io.r_string16();
                 if (!io.working) break;
+                p->id = pid;
                 client->packet((p_generic*)p);
             } break;
             default:
-                std::cout << "Unhandled packet: 0x" << std::hex << (int)pid << '\n';
+                std::cout << "Undefined packet: 0x" << std::hex << (int)pid << '\n';
                 client->disconnect();
                 return 1;
         }
     }
     if (!io.working) {
-        std::cout << "Socket Error\n";
+        std::cout << "Socket Error 0x" << std::hex << (int)pid << '\n';
         client->disconnect();
     }
     return 0;
@@ -855,6 +925,8 @@ void free_packet(p_generic *p) {
 bool write_packet(TCPsocket socket, p_generic *packet) {
     SocketIO io(socket);
     unsigned char pid = packet->id;
+    io.w_ubyte(pid);
+    std::cout << "Sending Packet 0x" << std::hex << (int)pid << '\n';
     switch (pid) {
         case 0x00:{
             p_keep_alive *p = (p_keep_alive*)packet;
@@ -1049,6 +1121,9 @@ bool write_packet(TCPsocket socket, p_generic *packet) {
         case 0x1C:{
             p_entity_velocity *p = (p_entity_velocity*)packet;
             io.w_int(p->EntityID);
+            io.w_short(p->vx);
+            io.w_short(p->vy);
+            io.w_short(p->vz);
         } break;
         case 0x1D:{
             p_destroy_entity *p = (p_destroy_entity*)packet;

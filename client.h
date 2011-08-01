@@ -20,6 +20,7 @@ class Client {
         bool running();
         
     private:
+        char *username;
         bool connected;
         TCPsocket socket;
         bool doPhysics,doPackets;
