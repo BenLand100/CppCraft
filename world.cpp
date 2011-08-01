@@ -27,7 +27,8 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
     strm.avail_in = size;
     strm.next_in = (unsigned char*) cdata;
     
-    int len = (sz+1)*(sy+1)*(sz+1)*2;
+    sx++; sy++; sz++; //why? minecraft. 
+    int len = (int) (sz*sy*sz*2.5);
     unsigned char *data = new unsigned char[len];
     
     strm.avail_out = len;
@@ -37,9 +38,17 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
         ret = inflate(&strm, Z_NO_FLUSH);
     } while (strm.avail_out != 0 && ret == Z_OK);
     inflateEnd(&strm);
-    if (ret != Z_OK) return false;
+    if (ret != Z_OK && ret != Z_STREAM_END) return false;
     
-    //DO STUFF WITH THE DATA
+    unsigned char *scan = data;
+    for (int x = lx; x < lx+sx; x++) {
+        for (int z = lz; z < lz+sz; z++) {
+            for (int y = ly; y < ly+sy; y++) {
+                blocks[x][z][y].type = *(scan++);
+            }
+        }
+    }
+    //Ignore the rest of it for now;
     
     delete data;
     return true;
@@ -88,8 +97,6 @@ bool World::initChunk(int cx, int cy, int cz) {
 }
 
 bool World::updateChunk(int x, int y, int z, int sx, int sy, int sz, int size, char *cdata) {
-    int lx,ly,lz;
-    chunkPos(x,y,z,lx,ly,lz);
     Chunk *c = getChunk(x,y,z);
     if (!c) {
         lock();
@@ -100,6 +107,8 @@ bool World::updateChunk(int x, int y, int z, int sx, int sy, int sz, int size, c
         chunks[ChunkPos(cx,cy,cz)] = c;
         unlock();
     }
+    int lx,ly,lz;
+    localPos(x,y,z,lx,ly,lz);
     return c->update(lx,ly,lz,sx,sy,sz,size,cdata);
 }
 
