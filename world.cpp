@@ -3,11 +3,9 @@
 #include "zlib.h"
 
 Block::Block() : type(0) {
-
 }
 
 Block::~Block() {
-
 }
 
 Chunk::Chunk() {

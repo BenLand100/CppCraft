@@ -314,6 +314,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x01:{
                 p_login_request_stc *p = new p_login_request_stc;
@@ -324,6 +325,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->Unknown;
+                delete p;
             } break;
             case 0x02:{
                 p_handshake_stc *p = new p_handshake_stc;
@@ -331,6 +334,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x03:{
                 p_chat_message *p = new p_chat_message;
@@ -338,6 +342,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->Message;
+                delete p;
             } break;
             case 0x04:{
                 p_time_update *p = new p_time_update;
@@ -345,6 +351,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x05:{
                 p_entity_equipment *p = new p_entity_equipment;
@@ -355,6 +362,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x06:{
                 p_spawn_position *p = new p_spawn_position;
@@ -364,6 +372,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x07:{
                 p_use_entity *p = new p_use_entity;
@@ -371,6 +380,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x08:{
                 p_update_health *p = new p_update_health;
@@ -378,6 +388,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x09:{
                 p_respawn *p = new p_respawn;
@@ -385,6 +396,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x0A:{
                 p_player *p = new p_player;
@@ -392,6 +404,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x0B:{
                 p_player_position *p = new p_player_position;
@@ -403,6 +416,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x0C:{
                 p_player_look *p = new p_player_look;
@@ -412,6 +426,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x0D:{
                 p_player_position_and_look_stc *p = new p_player_position_and_look_stc;
@@ -425,6 +440,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x0E:{
                 p_player_digging *p = new p_player_digging;
@@ -436,6 +452,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x0F:{
                 p_player_block_placement *p = new p_player_block_placement;
@@ -454,6 +471,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x10:{
                 p_holding_change *p = new p_holding_change;
@@ -461,6 +479,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x11:{
                 p_use_bed *p = new p_use_bed;
@@ -472,6 +491,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x12:{
                 p_animate *p = new p_animate;
@@ -480,6 +500,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x13:{
                 p_act *p = new p_act;
@@ -488,6 +509,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x14:{
                 p_spawn_player *p = new p_spawn_player;
@@ -502,6 +524,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->Name;
+                delete p;
             } break;
             case 0x15:{
                 p_pickup_spawn *p = new p_pickup_spawn;
@@ -518,6 +542,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x16:{
                 p_collect_item *p = new p_collect_item;
@@ -526,6 +551,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x17:{
                 p_addobject *p = new p_addobject;
@@ -547,6 +573,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x18:{
                 p_spawn_mob *p = new p_spawn_mob;
@@ -561,6 +588,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->Metadata;
+                delete p;
             } break;
             case 0x19:{
                 p_painting *p = new p_painting;
@@ -573,6 +602,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->Title;
+                delete p;
             } break;
             case 0x1B:{
                 p_stance_update *p = new p_stance_update;
@@ -585,6 +616,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x1C:{
                 p_entity_velocity *p = new p_entity_velocity;
@@ -595,6 +627,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x1D:{
                 p_destroy_entity *p = new p_destroy_entity;
@@ -602,6 +635,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x1E:{
                 p_entity *p = new p_entity;
@@ -609,6 +643,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x1F:{
                 p_entity_relative_move *p = new p_entity_relative_move;
@@ -619,6 +654,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x20:{
                 p_entity_look *p = new p_entity_look;
@@ -628,6 +664,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x21:{
                 p_entity_look_and_relative_move *p = new p_entity_look_and_relative_move;
@@ -640,6 +677,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x22:{
                 p_entity_teleport *p = new p_entity_teleport;
@@ -652,6 +690,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x26:{
                 p_entity_status *p = new p_entity_status;
@@ -660,6 +699,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x27:{
                 p_attach_entity *p = new p_attach_entity;
@@ -667,6 +707,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x28:{
                 p_entity_metadata *p = new p_entity_metadata;
@@ -675,6 +716,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->Metadata;
+                delete p;
             } break;
             case 0x32:{
                 p_prechunk *p = new p_prechunk;
@@ -684,6 +727,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x33:{
                 p_map_chunk *p = new p_map_chunk;
@@ -698,6 +742,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->CompressedData;
+                delete p;
             } break;
             case 0x34:{
                 p_multi_block_change *p = new p_multi_block_change;
@@ -710,6 +756,10 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->CoordinateArray;
+                delete p->TypeArray;
+                delete p->MetadataArray;
+                delete p;
             } break;
             case 0x35:{
                 p_block_change *p = new p_block_change;
@@ -721,6 +771,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x36:{
                 p_block_action *p = new p_block_action;
@@ -732,6 +783,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x3C:{
                 p_explosion *p = new p_explosion;
@@ -744,6 +796,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->Records;
+                delete p;
             } break;
             case 0x3D:{
                 p_sound_effect *p = new p_sound_effect;
@@ -755,6 +809,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x46:{
                 p_new_state *p = new p_new_state;
@@ -762,6 +817,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x47:{
                 p_thunderbolt *p = new p_thunderbolt;
@@ -773,6 +829,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x64:{
                 p_open_window *p = new p_open_window;
@@ -783,6 +840,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->WindowTitle;
+                delete p;
             } break;
             case 0x65:{
                 p_close_window *p = new p_close_window;
@@ -790,6 +849,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x66:{
                 p_window_click *p = new p_window_click;
@@ -809,6 +869,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x67:{
                 p_set_slot *p = new p_set_slot;
@@ -825,6 +886,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x68:{
                 p_window_items *p = new p_window_items;
@@ -834,6 +896,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->items;
+                delete p;
             } break;
             case 0x69:{
                 p_update_progress_bar *p = new p_update_progress_bar;
@@ -843,6 +907,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x6A:{
                 p_transaction *p = new p_transaction;
@@ -852,6 +917,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0x82:{
                 p_update_sign *p = new p_update_sign;
@@ -865,6 +931,11 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->Text1;
+                delete p->Text2;
+                delete p->Text3;
+                delete p->Text4;
+                delete p;
             } break;
             case 0x83:{
                 p_map_data *p = new p_map_data;
@@ -875,6 +946,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->Text;
+                delete p;
             } break;
             case 0xC8:{
                 p_increment_statistic *p = new p_increment_statistic;
@@ -883,6 +956,7 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p;
             } break;
             case 0xFF:{
                 p_kick *p = new p_kick;
@@ -890,6 +964,8 @@ int packets_thread(Client *client) {
                 if (!io.working) break;
                 p->id = pid;
                 client->packet((p_generic*)p);
+                delete p->Message;
+                delete p;
             } break;
             default:
                 std::cout << "Undefined packet: 0x" << std::hex << (int)pid << '\n';
@@ -902,62 +978,6 @@ int packets_thread(Client *client) {
         client->disconnect();
     }
     return 0;
-}
-
-void free_packet(p_generic *p) {
-    switch (p->id) {
-        case 0x01:
-            delete ((p_login_request_stc*)p)->Unknown;
-            break;
-        case 0x02:
-            delete ((p_handshake_stc*)p)->ConnectionHash;
-            break;
-        case 0x03:
-            delete ((p_chat_message*)p)->Message;
-            break;
-        case 0x14:
-            delete ((p_spawn_player*)p)->Name;
-            break;
-        case 0x18:
-            delete ((p_spawn_mob*)p)->Metadata;
-            break;
-        case 0x19:
-            delete ((p_painting*)p)->Title;
-            break;
-        case 0x28:
-            delete ((p_entity_metadata*)p)->Metadata;
-            break;
-        case 0x33:
-            delete ((p_map_chunk*)p)->CompressedData;
-            break;
-        case 0x34:
-            delete ((p_multi_block_change*)p)->CoordinateArray;
-            delete ((p_multi_block_change*)p)->TypeArray;
-            delete ((p_multi_block_change*)p)->MetadataArray;
-            break;
-        case 0x3C:
-            delete ((p_explosion*)p)->Records;
-            break;
-        case 0x64:
-            delete ((p_open_window*)p)->WindowTitle;
-            break;
-        case 0x68:
-            delete ((p_window_items*)p)->items;
-            break;
-        case 0x82:
-            delete ((p_update_sign*)p)->Text1;
-            delete ((p_update_sign*)p)->Text2;
-            delete ((p_update_sign*)p)->Text3;
-            delete ((p_update_sign*)p)->Text4;
-            break;
-        case 0x83:
-            delete ((p_map_data*)p)->Text;
-            break;
-        case 0xFF:
-            delete ((p_kick*)p)->Message;
-            break;
-    }
-    delete p;
 }
 
 bool write_packet(TCPsocket socket, p_generic *packet) {

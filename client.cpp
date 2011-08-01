@@ -111,7 +111,6 @@ void Client::packet(p_generic *p) {
         default:
             std::cout << "Unhandled Packet: 0x" << std::hex << (int)p->id << '\n';
     }
-    free_packet(p); //FIXME move this logic into the parser switch cases, easy but tedious
 }
 
 void Client::disconnect() {

@@ -8,7 +8,6 @@ typedef struct { unsigned char id;} p_generic;
 
 int packets_thread(Client *client);
 bool write_packet(TCPsocket socket, p_generic *p);
-void free_packet(p_generic *p); //FIXME remove this, move logic into parsers
 
 typedef char* string8;
 typedef char* string16;
