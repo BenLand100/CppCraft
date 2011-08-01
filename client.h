@@ -5,6 +5,7 @@
 #include "SDL_net.h"
 #include "packets.h"
 #include "entities.h"
+#include "world.h"
 
 class Client {
     public:
@@ -21,6 +22,7 @@ class Client {
         bool running();
         
     private:
+        World world;
         Player *us;
         bool onGround;
         bool connected;

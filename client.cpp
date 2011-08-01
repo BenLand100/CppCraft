@@ -25,11 +25,11 @@ bool Client::connect(char *host, int port) {
     if (!socket) {
         IPaddress ip;
         if (SDLNet_ResolveHost(&ip, host, port) < 0) {
-	        std::cout << "Could not resolve host: " << SDLNet_GetError() << '\n';
+	        std::cout << "Error resolving host: " << SDLNet_GetError() << '\n';
 	        return false;
         }
         if (!(socket = SDLNet_TCP_Open(&ip))) {
-	        std::cout << "Could not connect to host: " << SDLNet_GetError() << '\n';
+	        std::cout << "Error connecting: " << SDLNet_GetError() << '\n';
 	        socket = NULL;
 	        return false;
         }
@@ -93,13 +93,21 @@ void Client::packet(p_generic *p) {
         case 0x22:
             break;
         case 0x32: 
+            {
+                p_prechunk *prechunk = (p_prechunk*)p;
+                if (!prechunk->Mode) world.deleteChunk(prechunk->X,0,prechunk->Z);
+            }
             break;
         case 0x33:
-            std::cout << "We got chunks!\n";
+            {
+                p_map_chunk *update = (p_map_chunk*)p;
+                world.updateChunk(update->X,update->Y,update->Z,update->SizeX,update->SizeY,update->SizeZ,update->CompressedSize,update->CompressedData);
+            }
             break;
         default:
             std::cout << "Unhandled Packet: 0x" << std::hex << (int)p->id << '\n';
     }
+    free_packet(p); //FIXME move this logic into the parser switch cases, easy but tedious
 }
 
 void Client::disconnect() {
@@ -108,6 +116,7 @@ void Client::disconnect() {
     socket = NULL;
     if (us) delete us;
     us = NULL;
+    world.resetChunks();
 }
 
 bool Client::login(char *username) {
@@ -145,10 +154,8 @@ int main(int argc, char** argv) {
         while (c->running()) {
             SDL_Delay(1000);
         }
-        std::cout << "Finished!\n";
-    } else {
-        std::cout << "Error connecting to server!\n";
     }
+    std::cout << "Finished!\n";
     
     delete c;
     

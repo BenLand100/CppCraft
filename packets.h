@@ -8,6 +8,7 @@ typedef struct { unsigned char id;} p_generic;
 
 int packets_thread(Client *client);
 bool write_packet(TCPsocket socket, p_generic *p);
+void free_packet(p_generic *p); //FIXME remove this, move logic into parsers
 
 typedef char* string8;
 typedef char* string16;
@@ -139,7 +140,7 @@ typedef struct { unsigned char id; string16 Message;} p_kick;
         p.Y = (_Y); \
         p.Z = (_Z); \
         write_packet(sock,(p_generic*)&p); \
-    }
+    }void free_packet(p_generic *p)
 #define send_use_entity(sock,_UserEID) { \
         p_use_entity p; \
         p.id = 0x07; \
