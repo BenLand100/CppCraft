@@ -35,6 +35,7 @@ class Client {
         
     friend int physics_thread(Client *client);
     friend int packets_thread(Client *client);
+    friend void renderWorld(Client *client);
 };
 
 #endif

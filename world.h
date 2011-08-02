@@ -4,6 +4,14 @@
 #include "SDL_mutex.h"
 #include <map>
 
+class Client; //foward declaration
+
+inline void worldPos(int cx, int cy, int cz, int &x, int &y, int &z) {
+    x = cx << 4;
+    y = cy << 7;
+    z = cz << 4;
+}
+
 //Coordinates of the chunk that contains the position
 inline void chunkPos(int x, int y, int z, int &cx, int &cy, int &cz) {
     cx = x >> 4;
@@ -76,6 +84,7 @@ class Chunk {
     private:
         Block blocks[16][16][128]; //[X][Z][Y] for speed...
 
+    friend void drawChunk(Chunk *chunk, int cx, int cy, int cz);
 };
 
 class World {
@@ -99,7 +108,8 @@ class World {
     private:
         std::map<ChunkPos,Chunk*> chunks;
         SDL_mutex *chunklock;
-
+        
+    friend void renderWorld(Client *client);
 };
 
 #endif

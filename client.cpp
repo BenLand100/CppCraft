@@ -1,6 +1,7 @@
 #include <iostream>
 #include "client.h"
 #include "packets.h"
+#include "render.h"
 
 Client::Client() {
     connected = false;
@@ -159,10 +160,12 @@ int main(int argc, char** argv) {
     Client::init();
 
     Client *c = new Client();
-    if (c->connect((char*)"localhost") && c->login((char*)"YourMom")) {
+    if (c->connect((char*)"localhost") && c->login((char*)"YourMom") && initRender()) { 
         while (c->running()) {
-            SDL_Delay(1000);
+            SDL_Delay(30);
+            renderWorld(c);
         }
+        quitRender();
     }
     std::cout << "Finished!\n";
     
