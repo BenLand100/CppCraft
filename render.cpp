@@ -12,7 +12,7 @@ GLvoid initGL(GLsizei width, GLsizei height) {
     glViewport(0,0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(100.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
+    gluPerspective(100.0f, (GLfloat)width / (GLfloat)height, 0.1f, 500.0f);
 
     glShadeModel(GL_SMOOTH);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -35,39 +35,86 @@ bool initRender() {
     return true;
 }
 
-inline void drawBlock() {
+inline void setBlock(Block &b, int face) {
+    switch (b.type) {
+        case 1:
+            glColor3f(0.3f,0.3f,0.3f);
+            break;
+        case 2:
+            glColor3f(0.1f,0.9f,0.1f);
+            break;
+        case 3:
+            glColor3f(0.7f,0.5f,0.3f);
+            break;
+        case 4:
+            glColor3f(0.5f,0.5f,0.5f);
+            break;
+        default:
+            glColor3f(1.0f,0,0);
+            
+    }
+}
+
+inline void drawTop(Block &b) {
+    setBlock(b,0);
     glBegin(GL_QUADS);
-    
-    glVertex3f( 0.5f, 0.5f, -0.5f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
-    glVertex3f(-0.5f, 0.5f, 0.5f);
-    glVertex3f( 0.5f, 0.5f, 0.5f);
+        glVertex3f(1.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, 1.0f, 1.0f);
+        glVertex3f(1.0f, 1.0f, 1.0f);
+    glEnd();
+}
 
-    glVertex3f( 0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-    glVertex3f( 0.5f, -0.5f, 0.5f);
+//called from the position below
+inline void drawBottom(Block &b) {
+    setBlock(b,1);
+    glBegin(GL_QUADS);
+        glVertex3f(1.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, 1.0f, 0.0f);
+        glVertex3f(0.0f, 1.0f, 1.0f);
+        glVertex3f(1.0f, 1.0f, 1.0f);
+    glEnd();
+}
 
-    glVertex3f( 0.5f, 0.5f, 0.5f);
-    glVertex3f(-0.5f, 0.5f, 0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-    glVertex3f( 0.5f, -0.5f, 0.5f);
+inline void drawFront(Block &b) {
+    setBlock(b,2);
+    glBegin(GL_QUADS);
+        glVertex3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(0.0f, 1.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(1.0f, 0.0f, 1.0f);
+    glEnd();
+}
 
-    glVertex3f( 0.5f, 0.5f, -0.5f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f( 0.5f, -0.5f, -0.5f);
+//called from the position behind
+inline void drawBack(Block &b) {
+    setBlock(b,3);
+    glBegin(GL_QUADS);
+        glVertex3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(0.0f, 1.0f, 1.0f);
+        glVertex3f(0.0f, 0.0f, 1.0f);
+        glVertex3f(1.0f, 0.0f, 1.0f);
+    glEnd();
+}
 
-    glVertex3f(-0.5f, 0.5f, 0.5f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
+inline void drawRight(Block &b) {
+    setBlock(b,5);
+    glBegin(GL_QUADS);
+        glVertex3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(1.0f, 1.0f, 0.0f);
+        glVertex3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(1.0f, 0.0f, 1.0f);
+    glEnd();
+}
 
-    glVertex3f( 0.5f, 0.5f, 0.5f);
-    glVertex3f( 0.5f, 0.5f, -0.5f);
-    glVertex3f( 0.5f, -0.5f, -0.5f);
-    glVertex3f( 0.5f, -0.5f, 0.5f);
-    
+//called from the position right
+inline void drawLeft(Block &b) {
+    setBlock(b,4);
+    glBegin(GL_QUADS);
+        glVertex3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(1.0f, 1.0f, 0.0f);
+        glVertex3f(1.0f, 0.0f, 0.0f);
+        glVertex3f(1.0f, 0.0f, 1.0f);
     glEnd();
 }
 
@@ -81,27 +128,27 @@ inline void drawChunk(Chunk *chunk, int cx, int cy, int cz) {
             glTranslatef(0, 0, 1.0f);
             for (int y = 0; y < 128; y++) {
                 glTranslatef(0, 1.0f, 0);
-                switch (chunk->blocks[x][z][y].type) {
-                    case 0:
-                        goto end;
-                    case 1:
-                        glColor3f(0.3f,0.3f,0.3f);
-                        break;
-                    case 2:
-                        glColor3f(0.1f,0.9f,0.1f);
-                        break;
-                    case 3:
-                        glColor3f(0.7f,0.5f,0.3f);
-                        break;
-                    case 4:
-                        glColor3f(0.5f,0.5f,0.5f);
-                        break;
-                    default:
-                        glColor3f(1.0f,0,0);
-                        
+                if (!chunk->blocks[x][z][y].type) {  //SHOULD CHECK TRANSPARENCY 
+                    if (y < 127 && chunk->blocks[x][z][y+1].type) { //SHOULD CHECK TRANSPARENCY
+                        drawBottom(chunk->blocks[x][z][y+1]);
+                    }
+                    if (x < 15 && chunk->blocks[x+1][z][y].type) { //SHOULD CHECK TRANSPARENCY
+                        drawLeft(chunk->blocks[x+1][z][y]);
+                    }
+                    if (z < 15 && chunk->blocks[x][z+1][y].type) { //SHOULD CHECK TRANSPARENCY
+                        drawBack(chunk->blocks[x][z+1][y]);
+                    }
+                } else {
+                    if (y == 127 || !chunk->blocks[x][z][y+1].type) { //SHOULD CHECK TRANSPARENCY
+                        drawTop(chunk->blocks[x][z][y]);
+                    }
+                    if (x == 15 || !chunk->blocks[x+1][z][y].type) { //SHOULD CHECK TRANSPARENCY
+                        drawRight(chunk->blocks[x][z][y]);
+                    }
+                    if (z == 15 || !chunk->blocks[x][z+1][y].type) { //SHOULD CHECK TRANSPARENCY
+                        drawFront(chunk->blocks[x][z][y]);
+                    }
                 }
-                drawBlock();
-                end: continue;
             }
             glTranslatef(0, -128.0f, 0);
         }
@@ -119,7 +166,7 @@ void renderWorld(Client *client) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glRotatef(yRotationAngle+=1, 0.0f, 1.0f, 0.0f);//should do pitch/yaw here now it's just a look around
+    glRotatef(yRotationAngle+=1, 0.0f, 1.0f, 0.0f);//should do pitch/yaw here, now it's just a look around
     double px = client->us->x;
     double py = client->us->y;
     double pz = client->us->z;
@@ -138,8 +185,7 @@ void renderWorld(Client *client) {
         wx -= px;
         wy -= py;
         wz -= pz;
-        if (wx*wx+wy*wy+wz*wz <= 75*75)
-            drawChunk(ci->second,cx,cy,cz);
+        drawChunk(ci->second,cx,cy,cz);
     }
     client->world.unlock();
 
