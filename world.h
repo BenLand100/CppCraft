@@ -78,11 +78,11 @@ class Chunk {
         bool update(int lx, int ly, int lz, int sx, int sy, int sz, int size, char *cdata);
         
         inline Block* getBlock(int lx, int ly, int lz) {
-            return &blocks[lx][lz][ly];
+            return &blocks[(lx*16+lz)*128+ly];
         }
         
     private:
-        Block blocks[16][16][128]; //[X][Z][Y] for speed...
+        Block blocks[16*16*128]; //packed [X][Z][Y] for speed...
 
     friend void drawChunk(Chunk *chunk, int cx, int cy, int cz);
 };

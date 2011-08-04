@@ -42,9 +42,11 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
     
     unsigned char *scan = data;
     for (int x = lx; x < lx+sx; x++) {
+        Block *slice = &blocks[x*16*128];
         for (int z = lz; z < lz+sz; z++) {
+            Block *col = &slice[z*128];
             for (int y = ly; y < ly+sy; y++) {
-                blocks[x][z][y].type = *(scan++);
+                col[y].type = *(scan++);
             }
         }
     }
