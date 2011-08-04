@@ -133,6 +133,7 @@ bool Client::login(char *username) {
     if (!us) {
         us = new Player(username);
         send_handshake_cts(socket,us->name);
+        return true;
     }
 }
 
@@ -160,12 +161,16 @@ int main(int argc, char** argv) {
     Client::init();
 
     Client *c = new Client();
-    if (c->connect((char*)"localhost") && c->login((char*)"YourMom") && initRender()) { 
-        while (c->running()) {
-            SDL_Delay(30);
-            renderWorld(c);
+    if (c->connect((char*)"localhost")) {
+        if (c->login((char*)"YourMom")) {
+            if (initRender()) { 
+                while (c->running()) {
+                    SDL_Delay(30);
+                    renderWorld(c);
+                }
+                quitRender();
+            }
         }
-        quitRender();
     }
     std::cout << "Finished!\n";
     

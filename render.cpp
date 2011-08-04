@@ -7,8 +7,8 @@
 #include <GL/glu.h>
 
 
-#define w_width 400
-#define w_height 300
+#define w_width 800
+#define w_height 600
 
 GLvoid initGL(GLsizei width, GLsizei height) {
     glViewport(0,0, width, height);
@@ -22,6 +22,24 @@ GLvoid initGL(GLsizei width, GLsizei height) {
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     glEnable(GL_PERSPECTIVE_CORRECTION_HINT);
+    
+    GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 0.75f }; 
+    GLfloat LightDiffuse[]= { 1.0f, 1.0f, 1.0f, 0.75f };
+    GLfloat LightSpecular[]= { 1.0f, 1.0f, 1.0f, 0.75f };
+    GLfloat LightPosition[]= { 0,0,0, 1.0f };
+    
+    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse); 
+    glLightfv(GL_LIGHT1, GL_SPECULAR, LightSpecular); 
+    glLightfv(GL_LIGHT1, GL_POSITION,LightPosition); 
+    glEnable(GL_LIGHT1); 
+    glEnable(GL_LIGHTING);
+    glEnable(GL_COLOR_MATERIAL);
+    
+    float specReflection[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
+    glMateriali(GL_FRONT, GL_SHININESS, 128);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 }
 
 bool initRender() {
@@ -57,110 +75,113 @@ inline void setBlock(Block &b, int face) {
     }
 }
 
-inline void drawTop(Block &b) {
+inline void drawTop(Block &b, int x, int y, int z) {
     setBlock(b,0);
     glBegin(GL_QUADS);
-        glVertex3f(1.0f, 1.0f, 0.0f);
-        glVertex3f(0.0f, 1.0f, 0.0f);
-        glVertex3f(0.0f, 1.0f, 1.0f);
-        glVertex3f(1.0f, 1.0f, 1.0f);
+    glNormal3i(0,1,0);
+        glVertex3i(1+x, 1+y, z);
+        glVertex3i(x, 1+y, z);
+        glVertex3i(x, 1+y, 1+z);
+        glVertex3i(1+x, 1+y, 1+z);
     glEnd();
 }
 
 //called from the position below
-inline void drawBottom(Block &b) {
+inline void drawBottom(Block &b, int x, int y, int z) {
     setBlock(b,1);
     glBegin(GL_QUADS);
-        glVertex3f(1.0f, 1.0f, 0.0f);
-        glVertex3f(0.0f, 1.0f, 0.0f);
-        glVertex3f(0.0f, 1.0f, 1.0f);
-        glVertex3f(1.0f, 1.0f, 1.0f);
+    glNormal3i(0,-1,0);
+        glVertex3i(1+x, 1+y, z);
+        glVertex3i(x, 1+y, z);
+        glVertex3i(x, 1+y, 1+z);
+        glVertex3i(1+x, 1+y, 1+z);
     glEnd();
 }
 
-inline void drawFront(Block &b) {
+inline void drawFront(Block &b, int x, int y, int z) {
     setBlock(b,2);
     glBegin(GL_QUADS);
-        glVertex3f(1.0f, 1.0f, 1.0f);
-        glVertex3f(0.0f, 1.0f, 1.0f);
-        glVertex3f(0.0f, 0.0f, 1.0f);
-        glVertex3f(1.0f, 0.0f, 1.0f);
+    glNormal3i(0,0,1);
+        glVertex3i(1+x, 1+y, 1+z);
+        glVertex3i(x, 1+y, 1+z);
+        glVertex3i(x, y, 1+z);
+        glVertex3i(1+x, y, 1+z);
     glEnd();
 }
 
 //called from the position behind
-inline void drawBack(Block &b) {
+inline void drawBack(Block &b, int x, int y, int z) {
     setBlock(b,3);
     glBegin(GL_QUADS);
-        glVertex3f(1.0f, 1.0f, 1.0f);
-        glVertex3f(0.0f, 1.0f, 1.0f);
-        glVertex3f(0.0f, 0.0f, 1.0f);
-        glVertex3f(1.0f, 0.0f, 1.0f);
+    glNormal3i(0,0,-1);
+        glVertex3i(1+x, 1+y, 1+z);
+        glVertex3i(x, 1+y, 1+z);
+        glVertex3i(x, y, 1+z);
+        glVertex3i(1+x, y, 1+z);
     glEnd();
 }
 
-inline void drawRight(Block &b) {
-    setBlock(b,5);
+inline void drawRight(Block &b, int x, int y, int z) {
+    setBlock(b,4);
     glBegin(GL_QUADS);
-        glVertex3f(1.0f, 1.0f, 1.0f);
-        glVertex3f(1.0f, 1.0f, 0.0f);
-        glVertex3f(1.0f, 0.0f, 0.0f);
-        glVertex3f(1.0f, 0.0f, 1.0f);
+    glNormal3i(1,0,0);
+        glVertex3f(1+x, 1+y, 1+z);
+        glVertex3f(1+x, 1+y, z);
+        glVertex3f(1+x, y, z);
+        glVertex3f(1+x, y, 1+z);
     glEnd();
 }
 
 //called from the position right
-inline void drawLeft(Block &b) {
-    setBlock(b,4);
+inline void drawLeft(Block &b, int x, int y, int z) {
+    setBlock(b,5);
     glBegin(GL_QUADS);
-        glVertex3f(1.0f, 1.0f, 1.0f);
-        glVertex3f(1.0f, 1.0f, 0.0f);
-        glVertex3f(1.0f, 0.0f, 0.0f);
-        glVertex3f(1.0f, 0.0f, 1.0f);
+    glNormal3i(-1,0,0);
+        glVertex3f(1+x, 1+y, 1+z);
+        glVertex3f(1+x, 1+y, z);
+        glVertex3f(1+x, y, z);
+        glVertex3f(1+x, y, 1+z);
     glEnd();
 }
 
 inline void drawChunk(Chunk *chunk, int cx, int cy, int cz) {
+    int buffer[] = {1,1,0,0,1,0,0,1,1,1,1,1};
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glVertexPointer(3, GL_INT, 0, buffer);
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
     for (int x = 0; x < 16; x++) {
         Block *slice = &chunk->blocks[x*16*128];
-        glTranslatef(1.0f, 0, 0);
         for (int z = 0; z < 16; z++) {
             Block *col = &slice[z*128];
             Block *ncol = &col[128];
             Block *nslicecol = &col[16*128];
-            glTranslatef(0, 0, 1.0f);
             for (int y = 0; y < 128; y++) {
-                glTranslatef(0, 1.0f, 0);
                 if (!col[y].type) {  //SHOULD CHECK TRANSPARENCY 
                     if (y < 127 && col[y+1].type) { //SHOULD CHECK TRANSPARENCY
-                        drawBottom(col[y+1]);
+                        drawBottom(col[y+1],x,y,z);
                     }
                     if (x < 15 && nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawLeft(nslicecol[y]);
+                        drawLeft(nslicecol[y],x,y,z);
                     }
                     if (z < 15 && ncol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawBack(ncol[y]);
+                        drawBack(ncol[y],x,y,z);
                     }
                 } else {
                     if (y == 127 || !col[y+1].type) { //SHOULD CHECK TRANSPARENCY
-                        drawTop(col[y]);
+                        drawTop(col[y],x,y,z);
                     }
                     if (x == 15 || !nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawRight(col[y]);
+                        drawRight(col[y],x,y,z);
                     }
                     if (z == 15 || !ncol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawFront(col[y]);
+                        drawFront(col[y],x,y,z);
                     }
                 }
             }
-            glTranslatef(0, -128.0f, 0);
         }
-        glTranslatef(0, 0, -16.0f);
     }
-    glTranslatef(-16.0f, 0, 0);
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
 
