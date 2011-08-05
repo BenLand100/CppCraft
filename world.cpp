@@ -65,6 +65,17 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
     return true;
 }
 
+bool Chunk::update(int size, short *locs, char *types, char *metas) {
+    for (int i = 0; i < size; i++) {
+        int x = (*locs >> 12) & 0xF;
+        int z = (*locs >> 8) & 0xF;
+        int y = *(locs++) & 0xFF;
+        blocks[(x*16+z)*128+y].type = *(types++);
+        blocks[(x*16+z)*128+y].meta = *(metas++);
+    }
+    return true;
+}
+
 World::World() {
     chunklock = SDL_CreateMutex();
 }
@@ -121,6 +132,13 @@ bool World::updateChunk(int x, int y, int z, int sx, int sy, int sz, int size, c
     int lx,ly,lz;
     localPos(x,y,z,lx,ly,lz);
     return c->update(lx,ly,lz,sx,sy,sz,size,cdata);
+}
+
+bool World::updateChunk(int cx, int cy, int cz, int size, short *locs, char *types, char *metas) {
+    int x,y,z; worldPos(cx,cy,cz,x,y,z);
+    Chunk *c = getChunk(x,y,z);
+    if (!c) return false; //this cannot create a new chunk
+    return c->update(size,locs,types,metas);
 }
 
 bool World::deleteChunk(int cx, int cy, int cz) {

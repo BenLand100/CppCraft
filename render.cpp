@@ -100,8 +100,8 @@ inline int setBlock(Block &block, int face, int &tx, int &ty) {
             tx = 0; ty = 0; g = 0.0f; b = 0.0f;
             
     }
-    
-    float f = intensity[block.sky];
+    int light = block.light + block.sky;
+    float f = intensity[light < 16 ? light : 15];
     glColor3f(r*f,g*f,b*f);
 }
 
@@ -205,9 +205,6 @@ inline void drawLeft(Block &b, int x, int y, int z) {
 }
 
 inline void drawChunk(Chunk *chunk, int cx, int cy, int cz) {
-    int buffer[] = {1,1,0,0,1,0,0,1,1,1,1,1};
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(3, GL_INT, 0, buffer);
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);

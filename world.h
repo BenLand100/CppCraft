@@ -77,6 +77,7 @@ class Chunk {
         ~Chunk();
         
         bool update(int lx, int ly, int lz, int sx, int sy, int sz, int size, char *cdata);
+        bool update(int size, short *locs, char *types, char *metas);
         
         inline Block* getBlock(int lx, int ly, int lz) {
             return &blocks[(lx*16+lz)*128+ly];
@@ -100,6 +101,7 @@ class World {
         
         bool initChunk(int cx, int cy, int cz); //does nothing since not always sent anyway
         bool updateChunk(int x, int y, int z, int sx, int sy, int sz, int size, char *cdata); //position in world coords. unknown if it can cross chunk boundaries (this will fail if it does)
+        bool updateChunk(int cx, int cy, int cz, int size, short *locs, char *types, char *metas); //position in chunk coords
         bool deleteChunk(int cx, int cy, int cz);
         
         void lock();

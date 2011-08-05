@@ -105,6 +105,24 @@ void Client::packet(p_generic *p) {
                 }
             }
             break;
+        case 0x34:
+            {
+                p_multi_block_change *mbc = (p_multi_block_change*)p;
+                bool res = world.updateChunk(mbc->ChunkX,0,mbc->ChunkZ,mbc->ArraySize,mbc->CoordinateArray,mbc->TypeArray,mbc->MetadataArray);
+            }
+            break;
+        case 0x35:
+            {
+                p_block_change *change = (p_block_change*)p;
+                Block *b = world.getBlock(change->X,change->Y,change->Z);
+                if (b) {
+                    b->type = change->Type;
+                    b->meta = change->Metadata;
+                } else {
+                    std::cout << "Changed a block in an undefined chunk?\n";
+                }
+            }
+            break;
         case 0xFF:
             std::cout << "KICK: " << ((p_kick*)p)->Message << '\n';
             disconnect();
