@@ -131,8 +131,7 @@ inline int setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
             tx = 0; ty = 0; g = 0.0f; b = 0.0f;
             
     }
-    int light = l.sky;
-    float f = intensity[light < 16 ? light : 15];
+    float f = intensity[l.sky < 16 ? l.sky : 15];
     glColor3f(r*f,g*f,b*f);
 }
 
@@ -218,7 +217,6 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
     setBlock(b,l,4,tx,ty);
     glBegin(GL_QUADS);
-        //glNormal3i(-1,0,0);
         glTexCoord2i(tx+1,ty);
         glVertex3f(1+x, 1+y, 1+z);
         glTexCoord2i(tx,ty);
@@ -312,7 +310,7 @@ void renderWorld(Client *client) {
     double px = client->us->x;
     double py = client->us->y+client->us->height;
     double pz = client->us->z;
-    glTranslatef(-px, -(py+client->us->height), -pz); 
+    glTranslatef(-px, -py, -pz); 
 
     int time = SDL_GetTicks();
     
