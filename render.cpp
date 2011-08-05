@@ -235,46 +235,60 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     glEnd();
 }
 
-inline void drawChunk(Chunk *chunk, int cx, int cy, int cz) {
+#define TOP ((ty+y+1-py) < 0)
+#define RIGHT ((tx+x+1-px) < 0)
+#define FRONT ((tz+z+1-pz) < 0)
+#define BOTTOM ((ty+y+1-py) > 0)
+#define LEFT ((tx+x+1-px) > 0)
+#define BACK ((tz+z+1-pz) > 0)
+
+inline void drawChunk(Chunk *chunk, int cx, int cy, int cz, double fx, double fy, double fz, double px, double py, double pz) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
     Block sky; //default constructor
     Block *blocks = chunk->blocks;
-    for (int z = 0; z < 16; z++) {
-        for (int y = 0; y < 128; y++) {
-            if (blocks[z*128+y].type) drawLeft(blocks[z*128+y],sky,-1,y,z); //SHOULD CHECK TRANSPARENCY
+    int x = 0;
+    if (LEFT) {
+        for (int z = 0; z < 16; z++) {
+            for (int y = 0; y < 128; y++) {
+                if (blocks[z*128+y].type) drawLeft(blocks[z*128+y],sky,-1,y,z); //SHOULD CHECK TRANSPARENCY
+            }
         }
     }
-    for (int x = 0; x < 16; x++) {
+    for (x = 0; x < 16; x++) {
         Block *slice = &blocks[x*16*128];
-        for (int y = 0; y < 128; y++) {
-            if (slice[y].type) drawBack(slice[y],sky,x,y,-1); //SHOULD CHECK TRANSPARENCY
+        int z = 0;
+        if (BACK) {
+            for (int y = 0; y < 128; y++) {
+                if (slice[y].type) drawBack(slice[y],sky,x,y,-1); //SHOULD CHECK TRANSPARENCY
+            }
         }
-        for (int z = 0; z < 16; z++) {
+        for (z = 0; z < 16; z++) {
             Block *col = &slice[z*128];
             Block *ncol = &col[128];
             Block *nslicecol = &col[16*128];
-            if (col[0].type) drawBottom(col[0],sky,x,-1,z); //SHOULD CHECK TRANSPARENCY
-            for (int y = 0; y < 128; y++) {
+            int y = 0;
+            if (BOTTOM && col[0].type) drawBottom(col[0],sky,x,-1,z); //SHOULD CHECK TRANSPARENCY
+            for (y = 0; y < 128; y++) {
                 if (!col[y].type) {  //SHOULD CHECK TRANSPARENCY 
-                    if (y < 127 && col[y+1].type) { //SHOULD CHECK TRANSPARENCY
+                    if (BOTTOM && y < 127 && col[y+1].type) { //SHOULD CHECK TRANSPARENCY
                         drawBottom(col[y+1],col[y],x,y,z);
                     }
-                    if (x < 15 && nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
+                    if (LEFT && x < 15 && nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
                         drawLeft(nslicecol[y],col[y],x,y,z);
                     }
-                    if (z < 15 && ncol[y].type) { //SHOULD CHECK TRANSPARENCY
+                    if (BACK && z < 15 && ncol[y].type) { //SHOULD CHECK TRANSPARENCY
                         drawBack(ncol[y],col[y],x,y,z);
                     }
                 } else {
-                    if (y == 127 || !col[y+1].type) { //SHOULD CHECK TRANSPARENCY
+                    if (TOP && (y == 127 || !col[y+1].type)) { //SHOULD CHECK TRANSPARENCY
                         drawTop(col[y],y== 27 ? sky : col[y+1],x,y,z);
                     }
-                    if (x == 15 || !nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
+                    if (RIGHT && (x == 15 || !nslicecol[y].type)) { //SHOULD CHECK TRANSPARENCY
                         drawRight(col[y],x == 15 ? sky : nslicecol[y],x,y,z);
                     }
-                    if (z == 15 || !ncol[y].type) { //SHOULD CHECK TRANSPARENCY
+                    if (FRONT && (z == 15 || !ncol[y].type)) { //SHOULD CHECK TRANSPARENCY
                         drawFront(col[y],z == 15 ? sky: ncol[y],x,y,z);
                     }
                 }
@@ -284,7 +298,8 @@ inline void drawChunk(Chunk *chunk, int cx, int cy, int cz) {
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
 
-float yRotationAngle = 0;
+float yaw = 0;
+float pitch = 0;
 
 void renderWorld(Client *client) {
     
@@ -293,9 +308,13 @@ void renderWorld(Client *client) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glRotatef(yRotationAngle+=1, 0.0f, 1.0f, 0.0f);//should do pitch/yaw here, now it's just a look around
+    double fx = cos(pitch/180.0*3.14159)*cos((yaw-90)/180.0*3.14159);
+    double fz = cos(pitch/180.0*3.14159)*sin((yaw-90)/180.0*3.14159);
+    double fy = sin(pitch/180.0*3.14159);
+    glRotatef(yaw+=1, 0.0f, 1.0f, 0.0f);//should do pitch/yaw here, now it's just a look around
+    
     double px = client->us->x;
-    double py = client->us->y;
+    double py = client->us->y+client->us->height;
     double pz = client->us->z;
     glTranslatef(-px, -(py+client->us->height), -pz); 
 
@@ -305,19 +324,22 @@ void renderWorld(Client *client) {
     std::map<ChunkPos,Chunk*>::iterator ci = client->world.chunks.begin();
     std::map<ChunkPos,Chunk*>::iterator end = client->world.chunks.end();
     int i = 0;
-    for ( ; ci != end; ci++, i++) {
+    for ( ; ci != end; ci++) {
         int cx = ci->first.cx;
         int cy = ci->first.cy;
         int cz = ci->first.cz;
-        /*int wx,wy,wz;
+        int wx,wy,wz;
         worldPos(cx,cy,cz,wx,wy,wz);
-        wx -= px;
-        wy -= py;
-        wz -= pz;*/
-        drawChunk(ci->second,cx,cy,cz);
+        wx += 8 - px;
+        wz += 8 - pz;
+        double len  = sqrt(wx*wx+wz*wz);
+        double angle = acos((wx*fx+wz*fz)/len);
+        if (len < 40 || abs(angle) <= 70.0/180.0*3.14159) {
+            i++;
+            drawChunk(ci->second,cx,cy,cz,fx,fy,fz,px,py,pz);
+        }
     }
     client->world.unlock();
-    
     time = SDL_GetTicks()-time;
 
     glFlush(); 

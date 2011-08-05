@@ -111,7 +111,7 @@ void Client::packet(p_generic *p) {
                 bool res = world.updateChunk(mbc->ChunkX,0,mbc->ChunkZ,mbc->ArraySize,mbc->CoordinateArray,mbc->TypeArray,mbc->MetadataArray);
                 if (!res) {
                     std::cout << "Error performing multi block change\n";
-                    disconnect();
+                    //disconnect();
                 }
             }
             break;
@@ -187,7 +187,7 @@ int main(int argc, char** argv) {
         if (c->login((char*)"YourMom")) {
             if (initRender()) { 
                 while (c->running()) {
-                    SDL_Delay(30);
+                    SDL_Delay(1);
                     renderWorld(c);
                 }
                 quitRender();
