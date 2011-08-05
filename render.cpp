@@ -140,7 +140,6 @@ inline void drawTop(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
     setBlock(b,l,1,tx,ty);
     glBegin(GL_QUADS);
-        glNormal3i(0,1,0);
         glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, z);
         glTexCoord2i(tx,ty);
@@ -157,7 +156,6 @@ inline void drawBottom(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
     setBlock(b,l,0,tx,ty);
     glBegin(GL_QUADS);
-        glNormal3i(0,-1,0);
         glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, z);
         glTexCoord2i(tx,ty);
@@ -173,7 +171,6 @@ inline void drawFront(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
     setBlock(b,l,3,tx,ty);
     glBegin(GL_QUADS);
-        glNormal3i(0,0,1);
         glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, 1+z);
         glTexCoord2i(tx,ty);
@@ -190,7 +187,6 @@ inline void drawBack(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
     setBlock(b,l,2,tx,ty);
     glBegin(GL_QUADS);
-        glNormal3i(0,0,-1);
         glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, 1+z);
         glTexCoord2i(tx,ty);
@@ -206,7 +202,6 @@ inline void drawRight(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
     setBlock(b,l,5,tx,ty);
     glBegin(GL_QUADS);
-        glNormal3i(1,0,0);
         glTexCoord2i(tx,ty);
         glVertex3f(1+x, 1+y, 1+z);
         glTexCoord2i(tx+1,ty);
@@ -223,7 +218,7 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
     setBlock(b,l,4,tx,ty);
     glBegin(GL_QUADS);
-        glNormal3i(-1,0,0);
+        //glNormal3i(-1,0,0);
         glTexCoord2i(tx+1,ty);
         glVertex3f(1+x, 1+y, 1+z);
         glTexCoord2i(tx,ty);
@@ -242,7 +237,7 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
 #define LEFT ((tx+x+1-px) > 0)
 #define BACK ((tz+z+1-pz) > 0)
 
-inline void drawChunk(Chunk *chunk, int cx, int cy, int cz, double fx, double fy, double fz, double px, double py, double pz) {
+inline void drawChunk(Chunk *chunk, int cx, int cy, int cz, double px, double py, double pz) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
@@ -312,6 +307,7 @@ void renderWorld(Client *client) {
     double fz = cos(pitch/180.0*3.14159)*sin((yaw-90)/180.0*3.14159);
     double fy = sin(pitch/180.0*3.14159);
     glRotatef(yaw+=1, 0.0f, 1.0f, 0.0f);//should do pitch/yaw here, now it's just a look around
+    glRotatef(pitch, 1.0f, 0.0f, 0.0f);//should do pitch/yaw here, now it's just a look around
     
     double px = client->us->x;
     double py = client->us->y+client->us->height;
@@ -336,7 +332,7 @@ void renderWorld(Client *client) {
         double angle = acos((wx*fx+wz*fz)/len);
         if (len < 40 || abs(angle) <= 70.0/180.0*3.14159) {
             i++;
-            drawChunk(ci->second,cx,cy,cz,fx,fy,fz,px,py,pz);
+            drawChunk(ci->second,cx,cy,cz,px,py,pz);
         }
     }
     client->world.unlock();
