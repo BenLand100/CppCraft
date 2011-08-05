@@ -2,11 +2,6 @@
 #include <iostream>
 #include "zlib.h"
 
-Block::Block() : type(0) {
-}
-
-Block::~Block() {
-}
 
 Chunk::Chunk() {
 }
@@ -40,17 +35,31 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
     inflateEnd(&strm);
     if (ret != Z_OK && ret != Z_STREAM_END) return false;
     
-    unsigned char *scan = data;
+    //yea, they sub-byte-packed shit, cause THAT compresses well -.-
+    unsigned char *types = data;
+    unsigned char *metas = &types[sx*sy*sz];
+    unsigned char *lights = &metas[sx*sy*sz/2];
+    unsigned char *skys = &lights[sx*sy*sz/2];
+    int i = 0;
     for (int x = lx; x < lx+sx; x++) {
         Block *slice = &blocks[x*16*128];
         for (int z = lz; z < lz+sz; z++) {
             Block *col = &slice[z*128];
             for (int y = ly; y < ly+sy; y++) {
-                col[y].type = *(scan++);
+                col[y].type = *(types++);
+                if (i%2) {
+                    col[y].meta = *metas & 0xF;
+                    col[y].light = *lights & 0xF;
+                    col[y].sky = *skys & 0xF;
+                } else {
+                    col[y].meta = (*(metas++) >> 4) & 0xF;
+                    col[y].light = (*(lights++) >> 4) & 0xF;
+                    col[y].sky = (*(skys++) >> 4) & 0xF;
+                }
+                i++;
             }
         }
     }
-    //Ignore the rest of it for now;
     
     delete data;
     return true;

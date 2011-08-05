@@ -64,10 +64,11 @@ class ChunkPos {
 
 class Block {
     public:
-        Block();
-        ~Block();
+        inline Block() : type(0), meta(0), light(0), sky(0) { }
+        inline ~Block() { }
         
         int type;
+        char meta,light,sky;
 };
 
 class Chunk {

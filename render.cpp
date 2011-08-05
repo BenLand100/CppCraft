@@ -1,6 +1,7 @@
 #include "render.h"
 #include "world.h"
 #include <iostream>
+#include <cmath>
 #include <map>
 #include <SDL.h>
 #include <GL/gl.h>
@@ -9,6 +10,8 @@
 
 #define w_width 800
 #define w_height 600
+
+float intensity[16];
 
 GLvoid initGL(GLsizei width, GLsizei height) {
     glViewport(0,0, width, height);
@@ -20,26 +23,31 @@ GLvoid initGL(GLsizei width, GLsizei height) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-    glEnable(GL_PERSPECTIVE_CORRECTION_HINT);
+    /*glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+    glEnable(GL_PERSPECTIVE_CORRECTION_HINT);*/
     
-    GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 0.75f }; 
+    /*GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 0.75f }; 
     GLfloat LightDiffuse[]= { 1.0f, 1.0f, 1.0f, 0.75f };
     GLfloat LightSpecular[]= { 1.0f, 1.0f, 1.0f, 0.75f };
     GLfloat LightPosition[]= { 0,0,0, 1.0f };
     
-    glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
-    glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse); 
-    glLightfv(GL_LIGHT1, GL_SPECULAR, LightSpecular); 
-    glLightfv(GL_LIGHT1, GL_POSITION,LightPosition); 
-    glEnable(GL_LIGHT1); 
-    glEnable(GL_LIGHTING);
-    glEnable(GL_COLOR_MATERIAL);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, LightAmbient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, LightDiffuse); 
+    glLightfv(GL_LIGHT0, GL_SPECULAR, LightSpecular); 
+    glLightfv(GL_LIGHT0, GL_POSITION,LightPosition); 
+    glEnable(GL_LIGHT0); */
     
-    float specReflection[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+    glEnable(GL_LIGHTING);
+    
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_EMISSION);
+    for (int i = 0; i < 16; i++) {
+        intensity[15-i] = pow(0.8,i);
+    }
+    
+    /*float specReflection[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
-    glMateriali(GL_FRONT, GL_SHININESS, 128);
-    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    glMateriali(GL_FRONT, GL_SHININESS, 128);*/
 }
 
 bool initRender() {
@@ -55,30 +63,29 @@ bool initRender() {
     return true;
 }
 
-inline void setBlock(Block &b, int face) {
-    switch (b.type) {
+inline void setBlock(Block &block, int face) {
+    float r,g,b;
+    switch (block.type) {
         case 1:
-            glColor3f(0.3f,0.3f,0.3f);
-            break;
+            r = 0.3f; g = 0.3f; b = 0.3f; break;
         case 2:
-            glColor3f(0.1f,0.9f,0.1f);
-            break;
+            r = 0.1f; g = 0.9f; b = 0.1f; break;
         case 3:
-            glColor3f(0.7f,0.5f,0.3f);
-            break;
+            r = 0.7f; g = 0.5f; b = 0.3f; break;
         case 4:
-            glColor3f(0.5f,0.5f,0.5f);
-            break;
+            r = 0.5f; g = 0.5f; b = 0.5f; break;
         default:
-            glColor3f(1.0f,0,0);
+            r = 1.0f; g = 0.0f; b = 0.0f; break;
             
     }
+    float f = intensity[block.sky];
+    glColor3f(r*f,g*f,b*f);
 }
 
 inline void drawTop(Block &b, int x, int y, int z) {
     setBlock(b,0);
     glBegin(GL_QUADS);
-    glNormal3i(0,1,0);
+        glNormal3i(0,1,0);
         glVertex3i(1+x, 1+y, z);
         glVertex3i(x, 1+y, z);
         glVertex3i(x, 1+y, 1+z);
@@ -90,7 +97,7 @@ inline void drawTop(Block &b, int x, int y, int z) {
 inline void drawBottom(Block &b, int x, int y, int z) {
     setBlock(b,1);
     glBegin(GL_QUADS);
-    glNormal3i(0,-1,0);
+        glNormal3i(0,-1,0);
         glVertex3i(1+x, 1+y, z);
         glVertex3i(x, 1+y, z);
         glVertex3i(x, 1+y, 1+z);
@@ -101,7 +108,7 @@ inline void drawBottom(Block &b, int x, int y, int z) {
 inline void drawFront(Block &b, int x, int y, int z) {
     setBlock(b,2);
     glBegin(GL_QUADS);
-    glNormal3i(0,0,1);
+        glNormal3i(0,0,1);
         glVertex3i(1+x, 1+y, 1+z);
         glVertex3i(x, 1+y, 1+z);
         glVertex3i(x, y, 1+z);
@@ -113,7 +120,7 @@ inline void drawFront(Block &b, int x, int y, int z) {
 inline void drawBack(Block &b, int x, int y, int z) {
     setBlock(b,3);
     glBegin(GL_QUADS);
-    glNormal3i(0,0,-1);
+        glNormal3i(0,0,-1);
         glVertex3i(1+x, 1+y, 1+z);
         glVertex3i(x, 1+y, 1+z);
         glVertex3i(x, y, 1+z);
@@ -124,7 +131,7 @@ inline void drawBack(Block &b, int x, int y, int z) {
 inline void drawRight(Block &b, int x, int y, int z) {
     setBlock(b,4);
     glBegin(GL_QUADS);
-    glNormal3i(1,0,0);
+        glNormal3i(1,0,0);
         glVertex3f(1+x, 1+y, 1+z);
         glVertex3f(1+x, 1+y, z);
         glVertex3f(1+x, y, z);
@@ -136,7 +143,7 @@ inline void drawRight(Block &b, int x, int y, int z) {
 inline void drawLeft(Block &b, int x, int y, int z) {
     setBlock(b,5);
     glBegin(GL_QUADS);
-    glNormal3i(-1,0,0);
+        glNormal3i(-1,0,0);
         glVertex3f(1+x, 1+y, 1+z);
         glVertex3f(1+x, 1+y, z);
         glVertex3f(1+x, y, z);
@@ -210,12 +217,13 @@ void renderWorld(Client *client) {
         int cx = ci->first.cx;
         int cy = ci->first.cy;
         int cz = ci->first.cz;
-        /*int wx,wy,wz;
+        int wx,wy,wz;
         worldPos(cx,cy,cz,wx,wy,wz);
         wx -= px;
         wy -= py;
-        wz -= pz;*/
-        drawChunk(ci->second,cx,cy,cz);
+        wz -= pz;
+        if (wx*wx+wy*wy+wz*wz <= 300*300)
+            drawChunk(ci->second,cx,cy,cz);
     }
     client->world.unlock();
     
