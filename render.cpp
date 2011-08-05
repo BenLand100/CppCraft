@@ -120,7 +120,7 @@ inline int setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
         case 18:
             switch (block.meta) {
                 case 0: tx = 4; ty = 3; r = 0.0f; b = 0.0f; break;
-                case 1: tx = 4; ty = 8; r = 0.0f; g = 0.8f; b = 0.0f; break;
+                case 1: tx = 4; ty = 8; r = 0.0f; g = 0.3f; b = 0.0f; break;
                 case 2: tx = 4; ty = 8; r = 0.4f; b = 0.3f; break;
                 default: tx = 0; ty = 0; g = 0.0f; b = 0.0f;
             }
@@ -267,37 +267,37 @@ inline void drawChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int 
             Block *nslicecol = &col[16*128];
             int y = 0;
             if (BOTTOM && col[0].type) drawBottom(col[0],sky,x,-1,z); //SHOULD CHECK TRANSPARENCY
-            for (y = 0; y < 128; y++, col++) {
-                if (!col[0].type) {  //SHOULD CHECK TRANSPARENCY 
-                    if (BOTTOM && y < 127 && col[1].type) { //SHOULD CHECK TRANSPARENCY
-                        drawBottom(col[1],col[0],x,y,z);
+            for (y = 0; y < 128; y++) {
+                if (!col[y].type) {  //SHOULD CHECK TRANSPARENCY 
+                    if (BOTTOM && y < 127 && col[y+1].type) { //SHOULD CHECK TRANSPARENCY
+                        drawBottom(col[y+1],col[y],x,y,z);
                     }
                     if (LEFT && x < 15 && nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawLeft(nslicecol[y],col[0],x,y,z);
+                        drawLeft(nslicecol[y],col[y],x,y,z);
                     }
                     if (BACK && z < 15 && ncol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawBack(ncol[y],col[0],x,y,z);
+                        drawBack(ncol[y],col[y],x,y,z);
                     }
                 } else {
                     if (TOP) {
                         if (y == 127) {
-                            drawTop(col[0],sky,x,y,z);
-                        } else if (!col[1].type) { //SHOULD CHECK TRANSPARENCY
-                            drawTop(col[0],sky,x,y,z);
+                            drawTop(col[y],sky,x,y,z);
+                        } else if (!col[y+1].type) { //SHOULD CHECK TRANSPARENCY
+                            drawTop(col[y],sky,x,y,z);
                         }
                     }
                     if (RIGHT) {
                         if (x == 15) {
-                            drawRight(col[0],sky,x,y,z);
+                            drawRight(col[y],sky,x,y,z);
                         } else if (!nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
-                            drawRight(col[0],nslicecol[y],x,y,z);
+                            drawRight(col[y],nslicecol[y],x,y,z);
                         }
                     }
                     if (FRONT) {
                         if (z == 15) {
-                            drawFront(col[0],sky,x,y,z);
+                            drawFront(col[y],sky,x,y,z);
                         } else if (!ncol[y].type) { //SHOULD CHECK TRANSPARENCY
-                            drawFront(col[0],ncol[y],x,y,z);
+                            drawFront(col[y],ncol[y],x,y,z);
                         }
                     }
                 }
