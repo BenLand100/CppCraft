@@ -7,7 +7,6 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 
-
 #include "terrain.c"
 
 #define w_width 800
@@ -202,13 +201,13 @@ inline void drawRight(Block &b, Block &l, int x, int y, int z) {
     setBlock(b,l,5,tx,ty);
     glBegin(GL_QUADS);
         glTexCoord2i(tx,ty);
-        glVertex3f(1+x, 1+y, 1+z);
+        glVertex3i(1+x, 1+y, 1+z);
         glTexCoord2i(tx+1,ty);
-        glVertex3f(1+x, 1+y, z);
+        glVertex3i(1+x, 1+y, z);
         glTexCoord2i(tx+1,ty+1);
-        glVertex3f(1+x, y, z);
+        glVertex3i(1+x, y, z);
         glTexCoord2i(tx,ty+1);
-        glVertex3f(1+x, y, 1+z);
+        glVertex3i(1+x, y, 1+z);
     glEnd();
 }
 
@@ -218,29 +217,34 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     setBlock(b,l,4,tx,ty);
     glBegin(GL_QUADS);
         glTexCoord2i(tx+1,ty);
-        glVertex3f(1+x, 1+y, 1+z);
+        glVertex3i(1+x, 1+y, 1+z);
         glTexCoord2i(tx,ty);
-        glVertex3f(1+x, 1+y, z);
+        glVertex3i(1+x, 1+y, z);
         glTexCoord2i(tx,ty+1);
-        glVertex3f(1+x, y, z);
+        glVertex3i(1+x, y, z);
         glTexCoord2i(tx+1,ty+1);
-        glVertex3f(1+x, y, 1+z);
+        glVertex3i(1+x, y, 1+z);
     glEnd();
 }
 
-#define TOP ((ty+y+1-py) < 0)
-#define RIGHT ((tx+x+1-px) < 0)
-#define FRONT ((tz+z+1-pz) < 0)
-#define BOTTOM ((ty+y+1-py) > 0)
-#define LEFT ((tx+x+1-px) > 0)
-#define BACK ((tz+z+1-pz) > 0)
+#define TOP (y < py)
+#define RIGHT (x < px)
+#define FRONT (z < pz)
+#define BOTTOM (y+2 > py)
+#define LEFT (x+2 > px)
+#define BACK (z+2 > pz)
 
-inline void drawChunk(Chunk *chunk, int cx, int cy, int cz, double px, double py, double pz) {
+inline void drawChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
+    px -= tx;
+    py -= ty;
+    pz -= tz;
+    
     Block sky; //default constructor
     Block *blocks = chunk->blocks;
+    
     int x = 0;
     if (LEFT) {
         for (int z = 0; z < 16; z++) {
@@ -263,31 +267,44 @@ inline void drawChunk(Chunk *chunk, int cx, int cy, int cz, double px, double py
             Block *nslicecol = &col[16*128];
             int y = 0;
             if (BOTTOM && col[0].type) drawBottom(col[0],sky,x,-1,z); //SHOULD CHECK TRANSPARENCY
-            for (y = 0; y < 128; y++) {
-                if (!col[y].type) {  //SHOULD CHECK TRANSPARENCY 
-                    if (BOTTOM && y < 127 && col[y+1].type) { //SHOULD CHECK TRANSPARENCY
-                        drawBottom(col[y+1],col[y],x,y,z);
+            for (y = 0; y < 128; y++, col++) {
+                if (!col[0].type) {  //SHOULD CHECK TRANSPARENCY 
+                    if (BOTTOM && y < 127 && col[1].type) { //SHOULD CHECK TRANSPARENCY
+                        drawBottom(col[1],col[0],x,y,z);
                     }
                     if (LEFT && x < 15 && nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawLeft(nslicecol[y],col[y],x,y,z);
+                        drawLeft(nslicecol[y],col[0],x,y,z);
                     }
                     if (BACK && z < 15 && ncol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawBack(ncol[y],col[y],x,y,z);
+                        drawBack(ncol[y],col[0],x,y,z);
                     }
                 } else {
-                    if (TOP && (y == 127 || !col[y+1].type)) { //SHOULD CHECK TRANSPARENCY
-                        drawTop(col[y],y== 27 ? sky : col[y+1],x,y,z);
+                    if (TOP) {
+                        if (y == 127) {
+                            drawTop(col[0],sky,x,y,z);
+                        } else if (!col[1].type) { //SHOULD CHECK TRANSPARENCY
+                            drawTop(col[0],sky,x,y,z);
+                        }
                     }
-                    if (RIGHT && (x == 15 || !nslicecol[y].type)) { //SHOULD CHECK TRANSPARENCY
-                        drawRight(col[y],x == 15 ? sky : nslicecol[y],x,y,z);
+                    if (RIGHT) {
+                        if (x == 15) {
+                            drawRight(col[0],sky,x,y,z);
+                        } else if (!nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
+                            drawRight(col[0],nslicecol[y],x,y,z);
+                        }
                     }
-                    if (FRONT && (z == 15 || !ncol[y].type)) { //SHOULD CHECK TRANSPARENCY
-                        drawFront(col[y],z == 15 ? sky: ncol[y],x,y,z);
+                    if (FRONT) {
+                        if (z == 15) {
+                            drawFront(col[0],sky,x,y,z);
+                        } else if (!ncol[y].type) { //SHOULD CHECK TRANSPARENCY
+                            drawFront(col[0],ncol[y],x,y,z);
+                        }
                     }
                 }
             }
         }
     }
+    
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
 
@@ -328,7 +345,7 @@ void renderWorld(Client *client) {
         wz += 8 - pz;
         double len  = sqrt(wx*wx+wz*wz);
         double angle = acos((wx*fx+wz*fz)/len);
-        if (len < 40 || abs(angle) <= 70.0/180.0*3.14159) {
+        if (len < 30 || abs(angle) <= 60.0/180.0*3.14159) {
             i++;
             drawChunk(ci->second,cx,cy,cz,px,py,pz);
         }

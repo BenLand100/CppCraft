@@ -86,7 +86,7 @@ class Chunk {
     private:
         Block blocks[16*16*128]; //packed [X][Z][Y] for speed...
 
-    friend void drawChunk(Chunk *chunk, int cx, int cy, int cz, double px, double py, double pz);
+    friend void drawChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz);
 };
 
 class World {
