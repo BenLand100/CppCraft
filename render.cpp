@@ -8,10 +8,13 @@
 #include <GL/glu.h>
 
 
+#include "terrain.c"
+
 #define w_width 800
 #define w_height 600
 
 float intensity[16];
+int textureid;
 
 GLvoid initGL(GLsizei width, GLsizei height) {
     glViewport(0,0, width, height);
@@ -45,6 +48,19 @@ GLvoid initGL(GLsizei width, GLsizei height) {
         intensity[15-i] = pow(0.8,i);
     }
     
+    glBindTexture(GL_TEXTURE_2D, textureid);
+    glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+    glTexParameterf(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+    gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGBA,terrain.width,terrain.height,GL_RGBA,GL_UNSIGNED_INT_8_8_8_8_REV,terrain.pixel_data);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D,textureid);
+    glMatrixMode(GL_TEXTURE);
+    glLoadIdentity();
+    glScalef(16.0f/terrain.width,16.0f/terrain.height,1.0f);
+    
     /*float specReflection[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
     glMateriali(GL_FRONT, GL_SHININESS, 128);*/
@@ -63,90 +79,127 @@ bool initRender() {
     return true;
 }
 
-inline void setBlock(Block &block, int face) {
-    float r,g,b;
+//Face {0,1,2,3,4,5} == {-y,+y,-z,+z,-x,+x}
+inline int setBlock(Block &block, int face, int &tx, int &ty) {
+    float r=1.0f,g=1.0f,b=1.0f;
     switch (block.type) {
         case 1:
-            r = 0.3f; g = 0.3f; b = 0.3f; break;
+            tx = 1; ty = 0; break;
         case 2:
-            r = 0.1f; g = 0.9f; b = 0.1f; break;
+            switch (face) {
+                case 0: tx = 2; ty = 0; break;
+                case 1: tx = 0; ty = 0; r = 0.0f; b = 0.0f; break;
+                default: tx = 3; ty = 0; break;
+            }
+            break;
         case 3:
-            r = 0.7f; g = 0.5f; b = 0.3f; break;
+            tx = 2; ty = 0; break;
         case 4:
-            r = 0.5f; g = 0.5f; b = 0.5f; break;
+            tx = 0; ty = 1; break;
         default:
-            r = 1.0f; g = 0.0f; b = 0.0f; break;
+            tx = 0; ty = 0; g = 0.0f; b = 0.0f;
             
     }
+    
     float f = intensity[block.sky];
     glColor3f(r*f,g*f,b*f);
 }
 
 inline void drawTop(Block &b, int x, int y, int z) {
-    setBlock(b,0);
+    int tx,ty;
+    setBlock(b,1,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(0,1,0);
+        glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, z);
+        glTexCoord2i(tx,ty);
         glVertex3i(x, 1+y, z);
+        glTexCoord2i(tx,ty+1);
         glVertex3i(x, 1+y, 1+z);
+        glTexCoord2i(tx+1,ty+1);
         glVertex3i(1+x, 1+y, 1+z);
     glEnd();
 }
 
 //called from the position below
 inline void drawBottom(Block &b, int x, int y, int z) {
-    setBlock(b,1);
+    int tx,ty;
+    setBlock(b,0,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(0,-1,0);
+        glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, z);
+        glTexCoord2i(tx,ty);
         glVertex3i(x, 1+y, z);
+        glTexCoord2i(tx,ty+1);
         glVertex3i(x, 1+y, 1+z);
+        glTexCoord2i(tx+1,ty+1);
         glVertex3i(1+x, 1+y, 1+z);
     glEnd();
 }
 
 inline void drawFront(Block &b, int x, int y, int z) {
-    setBlock(b,2);
+    int tx,ty;
+    setBlock(b,3,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(0,0,1);
+        glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, 1+z);
+        glTexCoord2i(tx,ty);
         glVertex3i(x, 1+y, 1+z);
+        glTexCoord2i(tx,ty+1);
         glVertex3i(x, y, 1+z);
+        glTexCoord2i(tx+1,ty+1);
         glVertex3i(1+x, y, 1+z);
     glEnd();
 }
 
 //called from the position behind
 inline void drawBack(Block &b, int x, int y, int z) {
-    setBlock(b,3);
+    int tx,ty;
+    setBlock(b,2,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(0,0,-1);
+        glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, 1+z);
+        glTexCoord2i(tx,ty);
         glVertex3i(x, 1+y, 1+z);
+        glTexCoord2i(tx,ty+1);
         glVertex3i(x, y, 1+z);
+        glTexCoord2i(tx+1,ty+1);
         glVertex3i(1+x, y, 1+z);
     glEnd();
 }
 
 inline void drawRight(Block &b, int x, int y, int z) {
-    setBlock(b,4);
+    int tx,ty;
+    setBlock(b,5,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(1,0,0);
+        glTexCoord2i(tx,ty);
         glVertex3f(1+x, 1+y, 1+z);
+        glTexCoord2i(tx+1,ty);
         glVertex3f(1+x, 1+y, z);
+        glTexCoord2i(tx+1,ty+1);
         glVertex3f(1+x, y, z);
+        glTexCoord2i(tx,ty+1);
         glVertex3f(1+x, y, 1+z);
     glEnd();
 }
 
 //called from the position right
 inline void drawLeft(Block &b, int x, int y, int z) {
-    setBlock(b,5);
+    int tx,ty;
+    setBlock(b,4,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(-1,0,0);
+        glTexCoord2i(tx+1,ty);
         glVertex3f(1+x, 1+y, 1+z);
+        glTexCoord2i(tx,ty);
         glVertex3f(1+x, 1+y, z);
+        glTexCoord2i(tx,ty+1);
         glVertex3f(1+x, y, z);
+        glTexCoord2i(tx+1,ty+1);
         glVertex3f(1+x, y, 1+z);
     glEnd();
 }
@@ -217,13 +270,12 @@ void renderWorld(Client *client) {
         int cx = ci->first.cx;
         int cy = ci->first.cy;
         int cz = ci->first.cz;
-        int wx,wy,wz;
+        /*int wx,wy,wz;
         worldPos(cx,cy,cz,wx,wy,wz);
         wx -= px;
         wy -= py;
-        wz -= pz;
-        if (wx*wx+wy*wy+wz*wz <= 300*300)
-            drawChunk(ci->second,cx,cy,cz);
+        wz -= pz;*/
+        drawChunk(ci->second,cx,cy,cz);
     }
     client->world.unlock();
     
