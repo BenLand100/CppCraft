@@ -64,7 +64,7 @@ class ChunkPos {
 
 class Block {
     public:
-        inline Block() : type(0), meta(0), light(0), sky(0) { }
+        inline Block() : type(0), meta(0), light(0), sky(15) { }
         inline ~Block() { }
         
         int type;

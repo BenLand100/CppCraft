@@ -80,7 +80,7 @@ bool initRender() {
 }
 
 //Face {0,1,2,3,4,5} == {-y,+y,-z,+z,-x,+x}
-inline int setBlock(Block &block, int face, int &tx, int &ty) {
+inline int setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
     float r=1.0f,g=1.0f,b=1.0f;
     switch (block.type) {
         case 1:
@@ -96,18 +96,42 @@ inline int setBlock(Block &block, int face, int &tx, int &ty) {
             tx = 2; ty = 0; break;
         case 4:
             tx = 0; ty = 1; break;
+            
+        case 9:
+            tx = 13; ty = 12; break;
+            
+        case 12:
+            tx = 2; ty = 1; break;
+            
+            
+        case 17:
+            switch (face) {
+                case 0: case 1: tx = 5; ty = 1; break;
+                default: 
+                    switch (block.meta) {
+                        case 0: tx = 4; ty = 1; break;
+                        case 1: tx = 4; ty = 7; break;
+                        case 2: tx = 5; ty = 7; break;
+                        default:
+                            tx = 0; ty = 0; g = 0.0f; b = 0.0f;
+                    } break;
+            }
+            break;
+        case 18:
+            tx = 4; ty = 3; r = 0.0f; b = 0.0f; break;
+            
         default:
             tx = 0; ty = 0; g = 0.0f; b = 0.0f;
             
     }
-    int light = block.sky;
+    int light = l.sky;
     float f = intensity[light < 16 ? light : 15];
     glColor3f(r*f,g*f,b*f);
 }
 
-inline void drawTop(Block &b, int x, int y, int z) {
+inline void drawTop(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,1,tx,ty);
+    setBlock(b,l,1,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(0,1,0);
         glTexCoord2i(tx+1,ty);
@@ -122,9 +146,9 @@ inline void drawTop(Block &b, int x, int y, int z) {
 }
 
 //called from the position below
-inline void drawBottom(Block &b, int x, int y, int z) {
+inline void drawBottom(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,0,tx,ty);
+    setBlock(b,l,0,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(0,-1,0);
         glTexCoord2i(tx+1,ty);
@@ -138,9 +162,9 @@ inline void drawBottom(Block &b, int x, int y, int z) {
     glEnd();
 }
 
-inline void drawFront(Block &b, int x, int y, int z) {
+inline void drawFront(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,3,tx,ty);
+    setBlock(b,l,3,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(0,0,1);
         glTexCoord2i(tx+1,ty);
@@ -155,9 +179,9 @@ inline void drawFront(Block &b, int x, int y, int z) {
 }
 
 //called from the position behind
-inline void drawBack(Block &b, int x, int y, int z) {
+inline void drawBack(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,2,tx,ty);
+    setBlock(b,l,2,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(0,0,-1);
         glTexCoord2i(tx+1,ty);
@@ -171,9 +195,9 @@ inline void drawBack(Block &b, int x, int y, int z) {
     glEnd();
 }
 
-inline void drawRight(Block &b, int x, int y, int z) {
+inline void drawRight(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,5,tx,ty);
+    setBlock(b,l,5,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(1,0,0);
         glTexCoord2i(tx,ty);
@@ -188,9 +212,9 @@ inline void drawRight(Block &b, int x, int y, int z) {
 }
 
 //called from the position right
-inline void drawLeft(Block &b, int x, int y, int z) {
+inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,4,tx,ty);
+    setBlock(b,l,4,tx,ty);
     glBegin(GL_QUADS);
         glNormal3i(-1,0,0);
         glTexCoord2i(tx+1,ty);
@@ -208,42 +232,43 @@ inline void drawChunk(Chunk *chunk, int cx, int cy, int cz) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
+    Block sky; //default constructor
     Block *blocks = chunk->blocks;
     for (int z = 0; z < 16; z++) {
         for (int y = 0; y < 128; y++) {
-            if (blocks[z*128+y].type) drawLeft(blocks[z*128+y],-1,y,z); //SHOULD CHECK TRANSPARENCY
+            if (blocks[z*128+y].type) drawLeft(blocks[z*128+y],sky,-1,y,z); //SHOULD CHECK TRANSPARENCY
         }
     }
     for (int x = 0; x < 16; x++) {
         Block *slice = &blocks[x*16*128];
         for (int y = 0; y < 128; y++) {
-            if (slice[y].type) drawBack(slice[y],x,y,-1); //SHOULD CHECK TRANSPARENCY
+            if (slice[y].type) drawBack(slice[y],sky,x,y,-1); //SHOULD CHECK TRANSPARENCY
         }
         for (int z = 0; z < 16; z++) {
             Block *col = &slice[z*128];
             Block *ncol = &col[128];
             Block *nslicecol = &col[16*128];
-            if (col[0].type) drawBottom(col[0],x,-1,z); //SHOULD CHECK TRANSPARENCY
+            if (col[0].type) drawBottom(col[0],sky,x,-1,z); //SHOULD CHECK TRANSPARENCY
             for (int y = 0; y < 128; y++) {
                 if (!col[y].type) {  //SHOULD CHECK TRANSPARENCY 
                     if (y < 127 && col[y+1].type) { //SHOULD CHECK TRANSPARENCY
-                        drawBottom(col[y+1],x,y,z);
+                        drawBottom(col[y+1],col[y],x,y,z);
                     }
                     if (x < 15 && nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawLeft(nslicecol[y],x,y,z);
+                        drawLeft(nslicecol[y],col[y],x,y,z);
                     }
                     if (z < 15 && ncol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawBack(ncol[y],x,y,z);
+                        drawBack(ncol[y],col[y],x,y,z);
                     }
                 } else {
                     if (y == 127 || !col[y+1].type) { //SHOULD CHECK TRANSPARENCY
-                        drawTop(col[y],x,y,z);
+                        drawTop(col[y],y== 27 ? sky : col[y+1],x,y,z);
                     }
                     if (x == 15 || !nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawRight(col[y],x,y,z);
+                        drawRight(col[y],x == 15 ? sky : nslicecol[y],x,y,z);
                     }
                     if (z == 15 || !ncol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawFront(col[y],x,y,z);
+                        drawFront(col[y],z == 15 ? sky: ncol[y],x,y,z);
                     }
                 }
             }
