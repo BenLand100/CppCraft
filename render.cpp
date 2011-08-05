@@ -41,6 +41,8 @@ GLvoid initGL(GLsizei width, GLsizei height) {
     glEnable(GL_LIGHT0); */
     
     glEnable(GL_LIGHTING);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
     
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT, GL_EMISSION);
@@ -112,13 +114,18 @@ inline int setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
                         case 0: tx = 4; ty = 1; break;
                         case 1: tx = 4; ty = 7; break;
                         case 2: tx = 5; ty = 7; break;
-                        default:
-                            tx = 0; ty = 0; g = 0.0f; b = 0.0f;
+                        default: tx = 0; ty = 0; g = 0.0f; b = 0.0f;
                     } break;
             }
             break;
         case 18:
-            tx = 4; ty = 3; r = 0.0f; b = 0.0f; break;
+            switch (block.meta) {
+                case 0: tx = 4; ty = 3; r = 0.0f; b = 0.0f; break;
+                case 1: tx = 4; ty = 8; r = 0.0f; g = 0.8f; b = 0.0f; break;
+                case 2: tx = 4; ty = 8; r = 0.4f; b = 0.3f; break;
+                default: tx = 0; ty = 0; g = 0.0f; b = 0.0f;
+            }
+            break;
             
         default:
             tx = 0; ty = 0; g = 0.0f; b = 0.0f;
