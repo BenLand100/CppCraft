@@ -109,6 +109,10 @@ void Client::packet(p_generic *p) {
             {
                 p_multi_block_change *mbc = (p_multi_block_change*)p;
                 bool res = world.updateChunk(mbc->ChunkX,0,mbc->ChunkZ,mbc->ArraySize,mbc->CoordinateArray,mbc->TypeArray,mbc->MetadataArray);
+                if (!res) {
+                    std::cout << "Error performing multi block change\n";
+                    disconnect();
+                }
             }
             break;
         case 0x35:

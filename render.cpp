@@ -226,11 +226,20 @@ inline void drawChunk(Chunk *chunk, int cx, int cy, int cz) {
                         drawBack(ncol[y],x,y,z);
                     }
                 } else {
+                    if (y == 0) {
+                        drawBottom(col[y],x,y-1,z);
+                    }
                     if (y == 127 || !col[y+1].type) { //SHOULD CHECK TRANSPARENCY
                         drawTop(col[y],x,y,z);
                     }
+                    if (x == 0) {
+                        drawLeft(col[y],x-1,y,z);
+                    }
                     if (x == 15 || !nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
                         drawRight(col[y],x,y,z);
+                    }
+                    if (z == 0) {
+                        drawBack(col[y],x,y,z-1);
                     }
                     if (z == 15 || !ncol[y].type) { //SHOULD CHECK TRANSPARENCY
                         drawFront(col[y],x,y,z);

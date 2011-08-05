@@ -37,9 +37,9 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
     
     //yea, they sub-byte-packed shit, cause THAT compresses well -.-
     unsigned char *types = data;
-    unsigned char *metas = &types[sx*sy*sz];
-    unsigned char *lights = &metas[sx*sy*sz/2];
-    unsigned char *skys = &lights[sx*sy*sz/2];
+    unsigned char *metas = &data[sx*sy*sz];
+    unsigned char *lights = &data[sx*sy*sz*3/2];
+    unsigned char *skys = &data[sx*sy*sz*4/2];
     int i = 0;
     for (int x = lx; x < lx+sx; x++) {
         Block *slice = &blocks[x*16*128];
@@ -47,7 +47,7 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
             Block *col = &slice[z*128];
             for (int y = ly; y < ly+sy; y++) {
                 col[y].type = *(types++);
-                if (i%2) {
+                if (i&1) {
                     col[y].meta = *metas & 0xF;
                     col[y].light = *lights & 0xF;
                     col[y].sky = *skys & 0xF;
