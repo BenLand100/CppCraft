@@ -100,7 +100,7 @@ inline int setBlock(Block &block, int face, int &tx, int &ty) {
             tx = 0; ty = 0; g = 0.0f; b = 0.0f;
             
     }
-    int light = block.light + block.sky;
+    int light = block.sky;
     float f = intensity[light < 16 ? light : 15];
     glColor3f(r*f,g*f,b*f);
 }
@@ -208,12 +208,22 @@ inline void drawChunk(Chunk *chunk, int cx, int cy, int cz) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
+    Block *blocks = chunk->blocks;
+    for (int z = 0; z < 16; z++) {
+        for (int y = 0; y < 128; y++) {
+            if (blocks[z*128+y].type) drawLeft(blocks[z*128+y],-1,y,z); //SHOULD CHECK TRANSPARENCY
+        }
+    }
     for (int x = 0; x < 16; x++) {
-        Block *slice = &chunk->blocks[x*16*128];
+        Block *slice = &blocks[x*16*128];
+        for (int y = 0; y < 128; y++) {
+            if (slice[y].type) drawBack(slice[y],x,y,-1); //SHOULD CHECK TRANSPARENCY
+        }
         for (int z = 0; z < 16; z++) {
             Block *col = &slice[z*128];
             Block *ncol = &col[128];
             Block *nslicecol = &col[16*128];
+            if (col[0].type) drawBottom(col[0],x,-1,z); //SHOULD CHECK TRANSPARENCY
             for (int y = 0; y < 128; y++) {
                 if (!col[y].type) {  //SHOULD CHECK TRANSPARENCY 
                     if (y < 127 && col[y+1].type) { //SHOULD CHECK TRANSPARENCY
@@ -226,20 +236,11 @@ inline void drawChunk(Chunk *chunk, int cx, int cy, int cz) {
                         drawBack(ncol[y],x,y,z);
                     }
                 } else {
-                    if (y == 0) {
-                        drawBottom(col[y],x,y-1,z);
-                    }
                     if (y == 127 || !col[y+1].type) { //SHOULD CHECK TRANSPARENCY
                         drawTop(col[y],x,y,z);
                     }
-                    if (x == 0) {
-                        drawLeft(col[y],x-1,y,z);
-                    }
                     if (x == 15 || !nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
                         drawRight(col[y],x,y,z);
-                    }
-                    if (z == 0) {
-                        drawBack(col[y],x,y,z-1);
                     }
                     if (z == 15 || !ncol[y].type) { //SHOULD CHECK TRANSPARENCY
                         drawFront(col[y],x,y,z);
