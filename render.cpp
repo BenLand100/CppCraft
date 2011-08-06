@@ -130,12 +130,6 @@ inline int setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
             
     }
     float f = intensity[l.sky < 16 ? l.sky : 15];
-    switch (face) {
-        case 2: case 3:
-            f *= 0.8; break;
-        case 4: case 5:
-            f *= 0.6; break;
-    }
     glColor3f(r*f,g*f,b*f);
 }
 
