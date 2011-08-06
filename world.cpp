@@ -1,12 +1,14 @@
 #include "world.h"
 #include <iostream>
 #include "zlib.h"
+#include "render.h"
 
 
-Chunk::Chunk() {
+Chunk::Chunk() : dirty(true), haslist(false) {
 }
 
 Chunk::~Chunk() {
+    disposeChunk(this);
 }
 
 bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, char *cdata) {

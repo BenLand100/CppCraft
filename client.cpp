@@ -2,8 +2,10 @@
 #include "client.h"
 #include "packets.h"
 #include "render.h"
+#include <cmath>
 
 Client::Client() {
+    ax = ay = az = 0.0;
     connected = false;
     socket = NULL;
     doPhysics = false;
@@ -11,11 +13,21 @@ Client::Client() {
     doPackets = false;
     packets = NULL;
     us = NULL;
-    onGround = false;
+    usLock = false;
+    usLock = SDL_CreateMutex();
 }
 
 Client::~Client() {
     disconnect();
+    SDL_DestroyMutex(usLock);
+}
+
+void Client::lockUs() {
+    SDL_mutexP(usLock);
+}
+
+void Client::unlockUs() {
+    SDL_mutexV(usLock);
 }
         
 bool Client::connect(char *host, int port) {
@@ -45,8 +57,39 @@ int physics_thread(Client *client) {
     client->us->yaw = 0;
     while (client->doPhysics) {
         SDL_Delay(50);
-        //lolphysics
+        client->lockUs();
+        Block *feet = client->world.getBlock(client->us->x,client->us->y-0.05,client->us->z);
+        if (feet) switch (feet->type) {
+            case 0:
+                client->onGround = false;
+                break;
+        }
+        if (!client->onGround) {
+            if (feet) switch (feet->type) {
+                case 0:
+                    client->us->vy -= 9.8*0.05;
+                    break;
+                default:
+                    client->us->y = floor(client->us->y);
+                    client->us->vy = 0.0;
+                    client->onGround = true;
+            }
+        }
+        
+        client->us->vx += client->ax*0.05;
+        client->us->vy += client->ay*0.05;
+        client->us->vz += client->az*0.05;
+        
+        if (client->us->vx > 5.0) client->us->vx = 5.0;
+        if (client->us->vy > 10.0) client->us->vy = 5.0;
+        if (client->us->vz > 5.0) client->us->vz = 5.0;
+        
+        client->us->x += client->us->vx*0.05;
+        client->us->y += client->us->vy*0.05;
+        client->us->z += client->us->vz*0.05;
+        
         client->sendPos();
+        client->unlockUs();
     }
     return 0;
 }
@@ -68,14 +111,16 @@ void Client::packet(p_generic *p) {
         case 0x0D:
             {
                 p_player_position_and_look_stc *pos = (p_player_position_and_look_stc*)p;
+                lockUs();
                 onGround = pos->OnGround;
                 us->x = pos->X;
                 us->y = pos->Y;
                 us->z = pos->Z;
                 us->height = pos->Stance - pos->Y;
-                us->pitch = pos->Pitch;
-                us->yaw = pos->Yaw;
+                us->pitch = pos->Yaw;
+                us->yaw = pos->Pitch;
                 sendPos();
+                unlockUs();
             }
             if (!physics) {
                 doPhysics = true;
@@ -168,7 +213,7 @@ bool Client::running() {
 }
 
 void Client::sendPos() {
-    send_player_position_and_look_cts(socket,us->x,us->y,us->height+us->y,us->z,us->pitch,us->yaw,onGround);
+    send_player_position_and_look_cts(socket,us->x,us->y,us->height+us->y,us->z,us->yaw,us->pitch,onGround);
 }
 
 void Client::init() {

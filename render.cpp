@@ -347,9 +347,21 @@ void renderWorld(Client *client) {
         wz += 8 - pz;
         double len  = sqrt(wx*wx+wz*wz);
         double angle = acos((wx*fx+wz*fz)/len);
-        if (len < 40 || abs(angle) <= 35.0/180.0*3.14159) {
+        if (len < 40 || abs(angle) <= 100.0/180.0*3.14159) {
             i++;
-            drawChunk(ci->second,cx,cy,cz,px,py,pz);
+            //drawChunk(ci->second,cx,cy,cz,px,py,pz);
+            Chunk *chunk = ci->second;
+            if (chunk->dirty || !chunk->haslist) {
+                chunk->dirty = false;
+                if (chunk->haslist) glDeleteLists(chunk->list, 1);
+                chunk->haslist = true;
+                chunk->list = glGenLists(1);
+                glNewList(chunk->list, GL_COMPILE);
+                drawChunk(chunk,cx,cy,cz,px,py,pz);
+                glEndList();
+            } else {
+                glCallList(chunk->list);
+            }
         }
     }
     client->world.unlock();
@@ -358,7 +370,11 @@ void renderWorld(Client *client) {
     glFlush(); 
     SDL_GL_SwapBuffers();
     
-    std::cout << "Rendered in " << std::dec << time << " ms (" << (float)time/i << " per chunk)\n";
+    //std::cout << "Rendered in " << std::dec << time << " ms (" << (float)time/i << " per chunk)\n";
+}
+
+void disposeChunk(Chunk *chunk) {
+    if (chunk->haslist) glDeleteLists(chunk->list, 1);
 }
 
 void quitRender() {

@@ -6,5 +6,6 @@
 bool initRender();
 void renderWorld(Client *client);
 void quitRender();
+void disposeChunk(Chunk *chunk);
 
 #endif

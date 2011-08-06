@@ -21,7 +21,11 @@ class Client {
         
         bool running();
         
+        void lockUs();
+        void unlockUs();
+        
     private:
+        double ax,ay,az;
         World world;
         Player *us;
         bool onGround;
@@ -29,6 +33,7 @@ class Client {
         TCPsocket socket;
         bool doPhysics,doPackets;
         SDL_Thread *physics,*packets;
+        SDL_mutex *usLock;
         
         void packet(p_generic *p);
         void sendPos();
