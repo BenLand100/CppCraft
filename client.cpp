@@ -67,11 +67,11 @@ int physics_thread(Client *client) {
         if (!client->onGround) {
             if (feet) switch (feet->type) {
                 case 0:
-                    client->us->vy -= 9.8*0.05;
+                    //client->us->vy -= 9.8*0.05;
                     break;
                 default:
-                    client->us->y = floor(client->us->y);
-                    client->us->vy = 0.0;
+                    //client->us->y = floor(client->us->y);
+                    //client->us->vy = 0.0;
                     client->onGround = true;
             }
         }
@@ -209,6 +209,32 @@ bool Client::login(char *username) {
     }
 }
 
+
+void Client::jump() {
+    lockUs();
+    if (onGround) {
+        us->vy = 10.0;
+    }
+    unlockUs();
+}
+
+void Client::relLook(double dpitch, double dyaw) {
+    lockUs();
+    us->pitch += dpitch;
+    us->yaw += dyaw;
+    if (us->pitch > 90.0) us->pitch = 90.0;
+    if (us->pitch < -90.0) us->pitch = -90.0;
+    if (us->yaw > 360.0 || us->yaw < 0) us->yaw = fmod(us->yaw,360.0);
+    unlockUs();
+}
+
+void Client::setMotion(double forwards, double sideways) {
+    lockUs();
+    us->vz = forwards;
+    us->vx = sideways;
+    unlockUs();
+}
+
 bool Client::running() {
     return connected;
 }
@@ -238,6 +264,7 @@ int main(int argc, char** argv) {
             while (c->running()) {
                 SDL_Delay(10);
                 renderWorld(c);
+                processEvents(c);
             }
         }
     }

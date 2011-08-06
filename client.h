@@ -19,6 +19,10 @@ class Client {
         void disconnect();
         bool login(char *username);
         
+        void jump();
+        void relLook(double dpitch, double dyaw);
+        void setMotion(double forwards, double sideways);
+        
         bool running();
         
         void lockUs();

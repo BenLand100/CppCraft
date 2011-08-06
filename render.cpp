@@ -4,6 +4,7 @@
 #include <cmath>
 #include <map>
 #include <SDL.h>
+#include <SDL_keysym.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
 
@@ -76,6 +77,7 @@ bool initRender() {
         fprintf(stderr, "Unable to create openGL scene %s", SDL_GetError());
         return false;
     }
+    SDL_WM_GrabInput(SDL_GRAB_ON);
     initGL(w_width, w_height);
     return true;
 }
@@ -314,7 +316,7 @@ void renderWorld(Client *client) {
     double fz = cos(client->us->pitch/180.0*3.14159)*sin((client->us->yaw)/180.0*3.14159);
     double fy = sin(client->us->pitch/180.0*3.14159);
     glRotatef(client->us->pitch, 1.0f, 0.0f, 0.0f);
-    glRotatef((client->us->yaw+=0.25) +90.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef(client->us->yaw+90.0f, 0.0f, 1.0f, 0.0f);
     
     double px = client->us->x;
     double py = client->us->y+client->us->height;
@@ -364,6 +366,36 @@ void renderWorld(Client *client) {
 
 void disposeChunk(Chunk *chunk) {
     if (chunk->haslist) glDeleteLists(chunk->list, 1);
+}
+
+bool capture_mouse = true;
+
+void processEvents(Client *client) {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym) {
+                    case SDLK_SPACE:
+                        client->jump();
+                        break;
+                    case SDLK_ESCAPE:
+                        capture_mouse = !capture_mouse;
+                        SDL_WM_GrabInput(capture_mouse ? SDL_GRAB_ON : SDL_GRAB_OFF);
+                        break;
+                }
+                break;
+            case SDL_MOUSEMOTION:
+                if (capture_mouse) client->relLook(event.motion.yrel,event.motion.xrel);
+                break;
+            case SDL_QUIT:
+                client->disconnect();
+        }
+    }
+    unsigned char *keystate = SDL_GetKeyState(NULL);
+    int forward = keystate[SDLK_w] ? 1 : keystate[SDLK_s] ? -1 : 0;
+    int sideways = keystate[SDLK_d] ? 1 : keystate[SDLK_a] ? -1 : 0;
+    client->setMotion(forward,sideways);
 }
 
 void quitRender() {
