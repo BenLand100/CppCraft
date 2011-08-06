@@ -40,6 +40,9 @@ bool Client::connect(char *host, int port) {
 }
 
 int physics_thread(Client *client) {
+    //for some reason these get random values...
+    client->us->pitch = 0;
+    client->us->yaw = 0;
     while (client->doPhysics) {
         SDL_Delay(50);
         //lolphysics
@@ -88,6 +91,7 @@ void Client::packet(p_generic *p) {
         case 0x20:
         case 0x21:
         case 0x22:
+        case 0x26:
             break; //ignore entity motion stuff for now
         case 0x32: 
             {

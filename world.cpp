@@ -48,13 +48,13 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
             for (int y = ly; y < ly+sy; y++) {
                 col[y].type = *(types++);
                 if (i&1) {
-                    col[y].meta = *metas & 0xF;
-                    col[y].light = *lights & 0xF;
-                    col[y].sky = *skys & 0xF;
-                } else {
                     col[y].meta = (*(metas++) >> 4) & 0xF;
                     col[y].light = (*(lights++) >> 4) & 0xF;
                     col[y].sky = (*(skys++) >> 4) & 0xF;
+                } else {
+                    col[y].meta = (*(metas)) & 0xF;
+                    col[y].light = (*(lights)) & 0xF;
+                    col[y].sky = (*(skys)) & 0xF;
                 }
                 i++;
             }

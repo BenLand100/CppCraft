@@ -117,7 +117,7 @@ class SocketIO {
         inline float r_float() {
             read(4);
             union { float f; Uint32 i; } swap;
-            swap.i = SDL_Swap32(*(Uint32*)buffer);
+            swap.i = SDL_SwapBE32(*(Uint32*)buffer);
             return swap.f;
         }
         inline void w_float(float f) {
@@ -129,7 +129,7 @@ class SocketIO {
         inline double r_double() {
             read(8);
             union { double d; Uint64 l; } swap;
-            swap.l = SDL_Swap64(*(Uint64*)buffer);
+            swap.l = SDL_SwapBE64(*(Uint64*)buffer);
             return swap.d;
         }
         inline void w_double(double d) {

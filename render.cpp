@@ -19,7 +19,7 @@ GLvoid initGL(GLsizei width, GLsizei height) {
     glViewport(0,0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(100.0f, (GLfloat)width / (GLfloat)height, 0.1f, 500.0f);
+    gluPerspective(75.0f, (GLfloat)width / (GLfloat)height, 0.1f, 1000.0f);
 
     glShadeModel(GL_SMOOTH);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -104,7 +104,6 @@ inline int setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
         case 12:
             tx = 2; ty = 1; break;
             
-            
         case 17:
             switch (face) {
                 case 0: case 1: tx = 5; ty = 1; break;
@@ -113,16 +112,16 @@ inline int setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
                         case 0: tx = 4; ty = 1; break;
                         case 1: tx = 4; ty = 7; break;
                         case 2: tx = 5; ty = 7; break;
-                        default: tx = 0; ty = 0; g = 0.0f; b = 0.0f;
+                        default: tx = 0; ty = 0; g = 0.0f; b = 0.0f; break;
                     } break;
             }
             break;
         case 18:
-            switch (block.meta) {
+            switch (block.meta & 0x3) {
                 case 0: tx = 4; ty = 3; r = 0.0f; b = 0.0f; break;
                 case 1: tx = 4; ty = 8; r = 0.0f; g = 0.3f; b = 0.0f; break;
                 case 2: tx = 4; ty = 8; r = 0.4f; b = 0.3f; break;
-                default: tx = 0; ty = 0; g = 0.0f; b = 0.0f;
+                default: tx = 0; ty = 0; g = 0.0f; b = 0.0f; break;
             }
             break;
             
@@ -308,9 +307,6 @@ inline void drawChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int 
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
 
-float yaw = 0;
-float pitch = 0;
-
 void renderWorld(Client *client) {
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -318,11 +314,11 @@ void renderWorld(Client *client) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    double fx = cos(pitch/180.0*3.14159)*cos((yaw-90)/180.0*3.14159);
-    double fz = cos(pitch/180.0*3.14159)*sin((yaw-90)/180.0*3.14159);
-    double fy = sin(pitch/180.0*3.14159);
-    glRotatef(yaw+=1, 0.0f, 1.0f, 0.0f);//should do pitch/yaw here, now it's just a look around
-    glRotatef(pitch, 1.0f, 0.0f, 0.0f);//should do pitch/yaw here, now it's just a look around
+    double fx = cos(client->us->pitch/180.0*3.14159)*cos((client->us->yaw)/180.0*3.14159);
+    double fz = cos(client->us->pitch/180.0*3.14159)*sin((client->us->yaw)/180.0*3.14159);
+    double fy = sin(client->us->pitch/180.0*3.14159);
+    glRotatef(client->us->pitch, 1.0f, 0.0f, 0.0f);
+    glRotatef(client->us->yaw++ +90.0f, 0.0f, 1.0f, 0.0f);
     
     double px = client->us->x;
     double py = client->us->y+client->us->height;
@@ -345,7 +341,7 @@ void renderWorld(Client *client) {
         wz += 8 - pz;
         double len  = sqrt(wx*wx+wz*wz);
         double angle = acos((wx*fx+wz*fz)/len);
-        if (len < 30 || abs(angle) <= 60.0/180.0*3.14159) {
+        if (len < 40 || abs(angle) <= 35.0/180.0*3.14159) {
             i++;
             drawChunk(ci->second,cx,cy,cz,px,py,pz);
         }
