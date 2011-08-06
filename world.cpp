@@ -4,11 +4,13 @@
 #include "render.h"
 
 
-Chunk::Chunk() : dirty(true), haslist(false) {
+Chunk::Chunk(SDL_mutex *lock) : worldlock(lock), dirty(true), haslist(false) {
 }
 
 Chunk::~Chunk() {
+    SDL_mutexP(worldlock);
     disposeChunk(this);
+    SDL_mutexV(worldlock);
 }
 
 void Chunk::markDirty() {
@@ -133,7 +135,7 @@ bool World::updateChunk(int x, int y, int z, int sx, int sy, int sz, int size, c
         int cx,cy,cz;
         chunkPos(x,y,z,cx,cy,cz);
         std::cout << "Creating Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ") " << chunks.size() << '\n';
-        c = new Chunk();
+        c = new Chunk(chunklock);
         chunks[ChunkPos(cx,cy,cz)] = c;
         unlock();
     }
@@ -153,7 +155,7 @@ bool World::deleteChunk(int cx, int cy, int cz) {
     lock();
     std::map<ChunkPos,Chunk*>::iterator ci = chunks.find(ChunkPos(cx,cy,cz));
     if (ci == chunks.end()) return false;
-    //std::cout << "Deleting Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ")\n";
+    std::cout << "Deleting Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ")\n";
     delete ci->second;
     chunks.erase(ci);
     unlock();

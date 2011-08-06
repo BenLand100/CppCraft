@@ -307,6 +307,8 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
 
+int times = 0;
+
 void renderWorld(Client *client) {
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -363,11 +365,11 @@ void renderWorld(Client *client) {
     glFlush(); 
     SDL_GL_SwapBuffers();
     
-    //std::cout << "Rendered in " << std::dec << time << " ms (" << (float)time/i << " per chunk)\n";
+    if (!(times++ % 30)) std::cout << "Rendered in " << std::dec << time << " ms (" << (float)time/i << " per chunk)\n";
 }
 
 void disposeChunk(Chunk *chunk) {
-    if (chunk->haslist) glDeleteLists(chunk->list, 1);
+    //sif (chunk->haslist) glDeleteLists(chunk->list, 1);
 }
 
 bool capture_mouse = true;
