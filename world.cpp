@@ -11,6 +11,10 @@ Chunk::~Chunk() {
     disposeChunk(this);
 }
 
+void Chunk::markDirty() {
+    dirty = true;
+}
+
 bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, char *cdata) {
     z_stream strm;
     strm.zalloc = Z_NULL;
@@ -62,6 +66,7 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
             }
         }
     }
+    dirty = true;
     
     delete data;
     return true;
@@ -75,6 +80,7 @@ bool Chunk::update(int size, short *locs, char *types, char *metas) {
         blocks[(x*16+z)*128+y].type = *(types++);
         blocks[(x*16+z)*128+y].meta = *(metas++);
     }
+    dirty = true;
     return true;
 }
 

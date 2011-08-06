@@ -78,6 +78,7 @@ class Chunk {
         
         bool update(int lx, int ly, int lz, int sx, int sy, int sz, int size, char *cdata);
         bool update(int size, short *locs, char *types, char *metas);
+        void markDirty();
         
         inline Block* getBlock(int lx, int ly, int lz) {
             return &blocks[(lx*16+lz)*128+ly];
@@ -90,7 +91,7 @@ class Chunk {
         int list;
 
     friend void disposeChunk(Chunk *chunk);
-    friend void drawChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz);
+    friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz);
     friend void renderWorld(Client *client);
 };
 

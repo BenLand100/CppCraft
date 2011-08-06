@@ -171,6 +171,7 @@ void Client::packet(p_generic *p) {
                 if (b) {
                     b->type = change->Type;
                     b->meta = change->Metadata;
+                    world.getChunk(change->X,change->Y,change->Z)->markDirty();
                 } else {
                     std::cout << "Changed a block in an undefined chunk?\n";
                 }
@@ -230,23 +231,21 @@ void Client::quit() {
 int main(int argc, char** argv) {
 
     Client::init();
-
+    initRender();
     Client *c = new Client();
     if (c->connect((char*)"localhost")) {
         if (c->login((char*)"YourMom")) {
-            if (initRender()) { 
-                while (c->running()) {
-                    SDL_Delay(1);
-                    renderWorld(c);
-                }
-                quitRender();
+            while (c->running()) {
+                SDL_Delay(10);
+                renderWorld(c);
             }
         }
     }
+    delete c;
+    quitRender();
+    Client::quit();
+    
     std::cout << "Finished!\n";
     
-    delete c;
-    
-    Client::quit();
     return 0;
 }

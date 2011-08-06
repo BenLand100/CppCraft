@@ -81,7 +81,8 @@ bool initRender() {
 }
 
 //Face {0,1,2,3,4,5} == {-y,+y,-z,+z,-x,+x}
-inline int setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
+//Result indicates static block if true (used in make display lists)
+inline bool setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
     float r=1.0f,g=1.0f,b=1.0f;
     switch (block.type) {
         case 1:
@@ -137,12 +138,12 @@ inline int setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
             f *= 0.6; break;
     }
     glColor3f(r*f,g*f,b*f);
+    return true;
 }
 
 inline void drawTop(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,1,tx,ty);
-    glBegin(GL_QUADS);
+    if (setBlock(b,l,1,tx,ty)) {
         glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, z);
         glTexCoord2i(tx,ty);
@@ -151,14 +152,13 @@ inline void drawTop(Block &b, Block &l, int x, int y, int z) {
         glVertex3i(x, 1+y, 1+z);
         glTexCoord2i(tx+1,ty+1);
         glVertex3i(1+x, 1+y, 1+z);
-    glEnd();
+    }
 }
 
 //called from the position below
 inline void drawBottom(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,0,tx,ty);
-    glBegin(GL_QUADS);
+    if (setBlock(b,l,0,tx,ty)) {
         glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, z);
         glTexCoord2i(tx,ty);
@@ -167,13 +167,12 @@ inline void drawBottom(Block &b, Block &l, int x, int y, int z) {
         glVertex3i(x, 1+y, 1+z);
         glTexCoord2i(tx+1,ty+1);
         glVertex3i(1+x, 1+y, 1+z);
-    glEnd();
+    }
 }
 
 inline void drawFront(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,3,tx,ty);
-    glBegin(GL_QUADS);
+    if (setBlock(b,l,3,tx,ty)) {
         glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, 1+z);
         glTexCoord2i(tx,ty);
@@ -182,14 +181,13 @@ inline void drawFront(Block &b, Block &l, int x, int y, int z) {
         glVertex3i(x, y, 1+z);
         glTexCoord2i(tx+1,ty+1);
         glVertex3i(1+x, y, 1+z);
-    glEnd();
+    }
 }
 
 //called from the position behind
 inline void drawBack(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,2,tx,ty);
-    glBegin(GL_QUADS);
+    if (setBlock(b,l,2,tx,ty)) {
         glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, 1+z);
         glTexCoord2i(tx,ty);
@@ -198,13 +196,12 @@ inline void drawBack(Block &b, Block &l, int x, int y, int z) {
         glVertex3i(x, y, 1+z);
         glTexCoord2i(tx+1,ty+1);
         glVertex3i(1+x, y, 1+z);
-    glEnd();
+    }
 }
 
 inline void drawRight(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,5,tx,ty);
-    glBegin(GL_QUADS);
+    if (setBlock(b,l,5,tx,ty)) {
         glTexCoord2i(tx,ty);
         glVertex3i(1+x, 1+y, 1+z);
         glTexCoord2i(tx+1,ty);
@@ -213,14 +210,13 @@ inline void drawRight(Block &b, Block &l, int x, int y, int z) {
         glVertex3i(1+x, y, z);
         glTexCoord2i(tx,ty+1);
         glVertex3i(1+x, y, 1+z);
-    glEnd();
+    }
 }
 
 //called from the position right
 inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,4,tx,ty);
-    glBegin(GL_QUADS);
+    if (setBlock(b,l,4,tx,ty)) {
         glTexCoord2i(tx+1,ty);
         glVertex3i(1+x, 1+y, 1+z);
         glTexCoord2i(tx,ty);
@@ -229,9 +225,11 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
         glVertex3i(1+x, y, z);
         glTexCoord2i(tx+1,ty+1);
         glVertex3i(1+x, y, 1+z);
-    glEnd();
+    }
 }
 
+
+//These are used for back-face culling (not implemented atm) because it would actually be slower
 #define TOP (y < py)
 #define RIGHT (x < px)
 #define FRONT (z < pz)
@@ -239,7 +237,7 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
 #define LEFT (x+2 > px)
 #define BACK (z+2 > pz)
 
-inline void drawChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz) {
+inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
@@ -250,65 +248,57 @@ inline void drawChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int 
     Block sky; //default constructor
     Block *blocks = chunk->blocks;
     
+    glBegin(GL_QUADS);
     int x = 0;
-    if (LEFT) {
-        for (int z = 0; z < 16; z++) {
-            for (int y = 0; y < 128; y++) {
-                if (blocks[z*128+y].type) drawLeft(blocks[z*128+y],sky,-1,y,z); //SHOULD CHECK TRANSPARENCY
-            }
+    for (int z = 0; z < 16; z++) {
+        for (int y = 0; y < 128; y++) {
+            if (blocks[z*128+y].type) drawLeft(blocks[z*128+y],sky,-1,y,z); //SHOULD CHECK TRANSPARENCY
         }
     }
     for (x = 0; x < 16; x++) {
         Block *slice = &blocks[x*16*128];
         int z = 0;
-        if (BACK) {
-            for (int y = 0; y < 128; y++) {
-                if (slice[y].type) drawBack(slice[y],sky,x,y,-1); //SHOULD CHECK TRANSPARENCY
-            }
+        for (int y = 0; y < 128; y++) {
+            if (slice[y].type) drawBack(slice[y],sky,x,y,-1); //SHOULD CHECK TRANSPARENCY
         }
         for (z = 0; z < 16; z++) {
             Block *col = &slice[z*128];
             Block *ncol = &col[128];
             Block *nslicecol = &col[16*128];
             int y = 0;
-            if (BOTTOM && col[0].type) drawBottom(col[0],sky,x,-1,z); //SHOULD CHECK TRANSPARENCY
+            if (col[0].type) drawBottom(col[0],sky,x,-1,z); //SHOULD CHECK TRANSPARENCY
             for (y = 0; y < 128; y++) {
                 if (!col[y].type) {  //SHOULD CHECK TRANSPARENCY 
-                    if (BOTTOM && y < 127 && col[y+1].type) { //SHOULD CHECK TRANSPARENCY
+                    if (y < 127 && col[y+1].type) { //SHOULD CHECK TRANSPARENCY
                         drawBottom(col[y+1],col[y],x,y,z);
                     }
-                    if (LEFT && x < 15 && nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
+                    if (x < 15 && nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
                         drawLeft(nslicecol[y],col[y],x,y,z);
                     }
-                    if (BACK && z < 15 && ncol[y].type) { //SHOULD CHECK TRANSPARENCY
+                    if (z < 15 && ncol[y].type) { //SHOULD CHECK TRANSPARENCY
                         drawBack(ncol[y],col[y],x,y,z);
                     }
                 } else {
-                    if (TOP) {
-                        if (y == 127) {
-                            drawTop(col[y],sky,x,y,z);
-                        } else if (!col[y+1].type) { //SHOULD CHECK TRANSPARENCY
-                            drawTop(col[y],sky,x,y,z);
-                        }
+                    if (y == 127) {
+                        drawTop(col[y],sky,x,y,z);
+                    } else if (!col[y+1].type) { //SHOULD CHECK TRANSPARENCY
+                        drawTop(col[y],sky,x,y,z);
                     }
-                    if (RIGHT) {
-                        if (x == 15) {
-                            drawRight(col[y],sky,x,y,z);
-                        } else if (!nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
-                            drawRight(col[y],nslicecol[y],x,y,z);
-                        }
+                    if (x == 15) {
+                        drawRight(col[y],sky,x,y,z);
+                    } else if (!nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
+                        drawRight(col[y],nslicecol[y],x,y,z);
                     }
-                    if (FRONT) {
-                        if (z == 15) {
-                            drawFront(col[y],sky,x,y,z);
-                        } else if (!ncol[y].type) { //SHOULD CHECK TRANSPARENCY
-                            drawFront(col[y],ncol[y],x,y,z);
-                        }
+                    if (z == 15) {
+                        drawFront(col[y],sky,x,y,z);
+                    } else if (!ncol[y].type) { //SHOULD CHECK TRANSPARENCY
+                        drawFront(col[y],ncol[y],x,y,z);
                     }
                 }
             }
         }
     }
+    glEnd();
     
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
@@ -324,7 +314,7 @@ void renderWorld(Client *client) {
     double fz = cos(client->us->pitch/180.0*3.14159)*sin((client->us->yaw)/180.0*3.14159);
     double fy = sin(client->us->pitch/180.0*3.14159);
     glRotatef(client->us->pitch, 1.0f, 0.0f, 0.0f);
-    glRotatef(client->us->yaw++ +90.0f, 0.0f, 1.0f, 0.0f);
+    glRotatef((client->us->yaw+=0.25) +90.0f, 0.0f, 1.0f, 0.0f);
     
     double px = client->us->x;
     double py = client->us->y+client->us->height;
@@ -347,9 +337,9 @@ void renderWorld(Client *client) {
         wz += 8 - pz;
         double len  = sqrt(wx*wx+wz*wz);
         double angle = acos((wx*fx+wz*fz)/len);
-        if (len < 40 || abs(angle) <= 100.0/180.0*3.14159) {
+        //only render IF the chunk center is less than 40 blocks from us or in the 180 degree FOV in front of us
+        if (len < 40 || abs(angle) <= 90.0/180.0*3.14159) { 
             i++;
-            //drawChunk(ci->second,cx,cy,cz,px,py,pz);
             Chunk *chunk = ci->second;
             if (chunk->dirty || !chunk->haslist) {
                 chunk->dirty = false;
@@ -357,11 +347,10 @@ void renderWorld(Client *client) {
                 chunk->haslist = true;
                 chunk->list = glGenLists(1);
                 glNewList(chunk->list, GL_COMPILE);
-                drawChunk(chunk,cx,cy,cz,px,py,pz);
+                drawStaticChunk(chunk,cx,cy,cz,px,py,pz);
                 glEndList();
-            } else {
-                glCallList(chunk->list);
             }
+            glCallList(chunk->list);
         }
     }
     client->world.unlock();
