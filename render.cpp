@@ -5,6 +5,7 @@
 #include <map>
 #include <SDL.h>
 #include <SDL_keysym.h>
+#include <SDL_mouse.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
 
@@ -78,6 +79,7 @@ bool initRender() {
         return false;
     }
     SDL_WM_GrabInput(SDL_GRAB_ON);
+    SDL_ShowCursor(SDL_DISABLE);
     initGL(w_width, w_height);
     return true;
 }
@@ -381,6 +383,7 @@ void processEvents(Client *client) {
                         break;
                     case SDLK_ESCAPE:
                         capture_mouse = !capture_mouse;
+                        SDL_ShowCursor(capture_mouse ? SDL_DISABLE : 1);
                         SDL_WM_GrabInput(capture_mouse ? SDL_GRAB_ON : SDL_GRAB_OFF);
                         break;
                 }
@@ -393,9 +396,9 @@ void processEvents(Client *client) {
         }
     }
     unsigned char *keystate = SDL_GetKeyState(NULL);
-    int forward = keystate[SDLK_w] ? 1 : keystate[SDLK_s] ? -1 : 0;
-    int sideways = keystate[SDLK_d] ? 1 : keystate[SDLK_a] ? -1 : 0;
-    client->setMotion(forward,sideways);
+    double forwards = 5.0*(keystate[SDLK_w] ? 1 : keystate[SDLK_s] ? -1 : 0);
+    double sideways = 5.0*(keystate[SDLK_d] ? 1 : keystate[SDLK_a] ? -1 : 0);
+    client->setMotion(forwards,sideways);
 }
 
 void quitRender() {

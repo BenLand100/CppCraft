@@ -29,7 +29,7 @@ class Client {
         void unlockUs();
         
     private:
-        double ax,ay,az;
+        double forwards,sideways;
         World world;
         Player *us;
         bool onGround;

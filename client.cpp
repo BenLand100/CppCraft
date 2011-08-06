@@ -5,7 +5,7 @@
 #include <cmath>
 
 Client::Client() {
-    ax = ay = az = 0.0;
+    forwards = sideways = 0;
     connected = false;
     socket = NULL;
     doPhysics = false;
@@ -75,10 +75,15 @@ int physics_thread(Client *client) {
                     client->onGround = true;
             }
         }
-        
-        client->us->vx += client->ax*0.05;
-        client->us->vy += client->ay*0.05;
-        client->us->vz += client->az*0.05;
+        if (client->forwards || client->sideways) {
+            double fx = cos((client->us->yaw)/180.0*3.14159);
+            double fz = sin((client->us->yaw)/180.0*3.14159);
+            client->us->vx = -fz*client->sideways+fx*client->forwards;
+            client->us->vz = fx*client->sideways+fz*client->forwards;
+        } else {
+            client->us->vx = 0;
+            client->us->vz = 0;
+        }
         
         if (client->us->vx > 5.0) client->us->vx = 5.0;
         if (client->us->vy > 10.0) client->us->vy = 5.0;
@@ -230,8 +235,8 @@ void Client::relLook(double dpitch, double dyaw) {
 
 void Client::setMotion(double forwards, double sideways) {
     lockUs();
-    us->vz = forwards;
-    us->vx = sideways;
+    this->forwards = forwards;
+    this->sideways = sideways;
     unlockUs();
 }
 
