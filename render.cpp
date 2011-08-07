@@ -31,17 +31,6 @@ GLvoid initGL(GLsizei width, GLsizei height) {
     /*glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
     glEnable(GL_PERSPECTIVE_CORRECTION_HINT);*/
     
-    /*GLfloat LightAmbient[]= { 0.5f, 0.5f, 0.5f, 0.75f }; 
-    GLfloat LightDiffuse[]= { 1.0f, 1.0f, 1.0f, 0.75f };
-    GLfloat LightSpecular[]= { 1.0f, 1.0f, 1.0f, 0.75f };
-    GLfloat LightPosition[]= { 0,0,0, 1.0f };
-    
-    glLightfv(GL_LIGHT0, GL_AMBIENT, LightAmbient);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, LightDiffuse); 
-    glLightfv(GL_LIGHT0, GL_SPECULAR, LightSpecular); 
-    glLightfv(GL_LIGHT0, GL_POSITION,LightPosition); 
-    glEnable(GL_LIGHT0); */
-    
     glEnable(GL_LIGHTING);
     //glEnable(GL_BLEND);
     //glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
@@ -64,10 +53,6 @@ GLvoid initGL(GLsizei width, GLsizei height) {
     glMatrixMode(GL_TEXTURE);
     glLoadIdentity();
     glScalef(16.0f/terrain.width,16.0f/terrain.height,1.0f);
-    
-    /*float specReflection[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
-    glMateriali(GL_FRONT, GL_SHININESS, 128);*/
 }
 
 bool initRender() {
@@ -141,6 +126,8 @@ inline bool setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
             f *= 0.8; break;
         case 4: case 5:
             f *= 0.6; break;
+        default:
+            break;
     }
     glColor3f(r*f,g*f,b*f);
     return true;
@@ -233,15 +220,6 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     }
 }
 
-
-//These are used for back-face culling (not implemented atm) because it would actually be slower
-#define TOP (y < py)
-#define RIGHT (x < px)
-#define FRONT (z < pz)
-#define BOTTOM (y+2 > py)
-#define LEFT (x+2 > px)
-#define BACK (z+2 > pz)
-
 inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
@@ -287,7 +265,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py
                     if (y == 127) {
                         drawTop(col[y],sky,x,y,z);
                     } else if (!col[y+1].type) { //SHOULD CHECK TRANSPARENCY
-                        drawTop(col[y],sky,x,y,z);
+                        drawTop(col[y],col[y+1],x,y,z);
                     }
                     if (x == 15) {
                         drawRight(col[y],sky,x,y,z);
@@ -311,11 +289,13 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py
 SDL_mutex *listlock = SDL_CreateMutex();
 std::vector<int> lists;
 int times = 0;
+int num = 0;
 
 void renderWorld(Client *client) {
 
     SDL_mutexP(listlock);
     while (!lists.empty()) {
+        //std::cout << "Freeing display list (" << std::dec << num-- << ") " << lists.back() << '\n';
         glDeleteLists(lists.back(), 1);
         lists.pop_back();
     }
@@ -362,6 +342,7 @@ void renderWorld(Client *client) {
                 if (!chunk->haslist) {
                     chunk->haslist = true;
                     chunk->list = glGenLists(1);
+                    num++;
                 }
                 glNewList(chunk->list, GL_COMPILE);
                 drawStaticChunk(chunk,cx,cy,cz,px,py,pz);

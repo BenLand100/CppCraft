@@ -111,6 +111,7 @@ Block* World::getBlock(int x, int y, int z) {
 Chunk* World::getChunk(int x, int y, int z) {
     int cx,cy,cz;
     chunkPos(x,y,z,cx,cy,cz);
+    //std::cout << "GetChunk (" << std::dec << x << ' ' << y << ' ' << z << ") => (" << cx << ' ' << cy << ' ' << cz << ")\n";
     lock();
     std::map<ChunkPos,Chunk*>::iterator ci = chunks.find(ChunkPos(cx,cy,cz));
     Chunk *c = NULL;
@@ -132,7 +133,7 @@ bool World::updateChunk(int x, int y, int z, int sx, int sy, int sz, int size, c
         lock();
         int cx,cy,cz;
         chunkPos(x,y,z,cx,cy,cz);
-        std::cout << "Creating Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ") " << chunks.size() << '\n';
+        //std::cout << "Creating Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ") " << chunks.size() << '\n';
         c = new Chunk();
         chunks[ChunkPos(cx,cy,cz)] = c;
         unlock();
@@ -153,7 +154,7 @@ bool World::deleteChunk(int cx, int cy, int cz) {
     lock();
     std::map<ChunkPos,Chunk*>::iterator ci = chunks.find(ChunkPos(cx,cy,cz));
     if (ci == chunks.end()) return false;
-    std::cout << "Deleting Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ")\n";
+    //std::cout << "Deleting Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ")\n";
     delete ci->second;
     chunks.erase(ci);
     unlock();

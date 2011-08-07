@@ -52,9 +52,6 @@ bool Client::connect(char *host, int port) {
 }
 
 int physics_thread(Client *client) {
-    //for some reason these get random values...
-    client->us->pitch = 0;
-    client->us->yaw = 0;
     while (client->doPhysics) {
         SDL_Delay(50);
         client->lockUs();
@@ -122,8 +119,8 @@ void Client::packet(p_generic *p) {
                 us->y = pos->Y;
                 us->z = pos->Z;
                 us->height = pos->Stance - pos->Y;
-                us->pitch = pos->Yaw;
-                us->yaw = pos->Pitch;
+                us->pitch = pos->Pitch;
+                us->yaw = pos->Yaw;
                 sendPos();
                 unlockUs();
             }
@@ -163,22 +160,17 @@ void Client::packet(p_generic *p) {
             {
                 p_multi_block_change *mbc = (p_multi_block_change*)p;
                 bool res = world.updateChunk(mbc->ChunkX,0,mbc->ChunkZ,mbc->ArraySize,mbc->CoordinateArray,mbc->TypeArray,mbc->MetadataArray);
-                if (!res) {
-                    std::cout << "Error performing multi block change\n";
-                    //disconnect();
-                }
+                //Ignore if the chunk is not currently loaded...?
             }
             break;
         case 0x35:
             {
                 p_block_change *change = (p_block_change*)p;
                 Block *b = world.getBlock(change->X,change->Y,change->Z);
-                if (b) {
+                if (b) { //Ignore if the chunk is not currently loaded...?
                     b->type = change->Type;
                     b->meta = change->Metadata;
                     world.getChunk(change->X,change->Y,change->Z)->markDirty();
-                } else {
-                    std::cout << "Changed a block in an undefined chunk?\n";
                 }
             }
             break;
