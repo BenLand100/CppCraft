@@ -272,8 +272,8 @@ int main(int argc, char** argv) {
     Client::init();
     initRender();
     Client *c = new Client();
-    if (c->connect((char*)"localhost")) {
-        if (c->login((char*)"YourMom")) {
+    if (c->connect((char*)"3d3.ca")) {
+        if (c->login((char*)"Jason2gs")) {
             while (c->running()) {
                 SDL_Delay(10);
                 renderWorld(c);

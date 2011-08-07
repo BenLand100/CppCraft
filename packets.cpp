@@ -51,7 +51,7 @@ class SocketIO {
     private:
         TCPsocket socket;
         unsigned char buffer[16];
-        inline void read(int len) {
+        inline void read(unsigned char *buffer, int len) {
             int read = 0, cur;
             for (;;) { //Supposedly SDL should wait for the whole length, in practice however...
                 cur = SDLNet_TCP_Recv(socket, &buffer[read], len);
@@ -65,6 +65,9 @@ class SocketIO {
                 std::cout << std::dec << cur << " bytes read - readunder\n";
                 read += cur;
             }
+        }
+        inline void read(int len) {
+            read(buffer,len);
         }
         inline void write(int len) {
             if (SDLNet_TCP_Send(socket, (void*)buffer, len) != len) {
@@ -277,9 +280,7 @@ class SocketIO {
         
         inline char* r_bytearray(int len) {
             char *array = new char[len];
-            if (SDLNet_TCP_Recv(socket, array, len) != len) {
-                working = false;
-            }
+            read((unsigned char*)array, len);
             return array;
         }
         inline void w_bytearray(char* array, int len) {
