@@ -4,13 +4,11 @@
 #include "render.h"
 
 
-Chunk::Chunk(SDL_mutex *lock) : worldlock(lock), dirty(true), haslist(false) {
+Chunk::Chunk() : dirty(true), haslist(false) {
 }
 
 Chunk::~Chunk() {
-    SDL_mutexP(worldlock);
     disposeChunk(this);
-    SDL_mutexV(worldlock);
 }
 
 void Chunk::markDirty() {
@@ -31,7 +29,7 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
     strm.next_in = (unsigned char*) cdata;
     
     sx++; sy++; sz++; //why? minecraft. 
-    int len = (int) (sz*sy*sz*2.5);
+    int len = sz*sy*sz*5/2;
     unsigned char *data = new unsigned char[len];
     
     strm.avail_out = len;
@@ -95,12 +93,12 @@ World::~World() {
 }
 
 void World::lock() {
-    SDL_mutexP(chunklock);
+    //SDL_mutexP(chunklock);
 }
 
 
 void World::unlock() {
-    SDL_mutexV(chunklock);
+    //SDL_mutexV(chunklock);
 }
 
 Block* World::getBlock(int x, int y, int z) {
@@ -135,7 +133,7 @@ bool World::updateChunk(int x, int y, int z, int sx, int sy, int sz, int size, c
         int cx,cy,cz;
         chunkPos(x,y,z,cx,cy,cz);
         std::cout << "Creating Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ") " << chunks.size() << '\n';
-        c = new Chunk(chunklock);
+        c = new Chunk();
         chunks[ChunkPos(cx,cy,cz)] = c;
         unlock();
     }

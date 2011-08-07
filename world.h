@@ -73,7 +73,7 @@ class Block {
 
 class Chunk {
     public:
-        Chunk(SDL_mutex *lock);
+        Chunk();
         ~Chunk();
         
         bool update(int lx, int ly, int lz, int sx, int sy, int sz, int size, char *cdata);
@@ -86,14 +86,13 @@ class Chunk {
         
     private:
         Block blocks[16*16*128]; //packed [X][Z][Y] for speed...
-        SDL_mutex *worldlock;
         
-        bool dirty,haslist;
+        bool destroy,dirty,haslist;
         int list;
 
-    friend void disposeChunk(Chunk *chunk);
     friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz);
     friend void renderWorld(Client *client);
+    friend void disposeChunk(Chunk *chunk);
 };
 
 class World {

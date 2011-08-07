@@ -23,11 +23,11 @@ Client::~Client() {
 }
 
 void Client::lockUs() {
-    SDL_mutexP(usLock);
+    //SDL_mutexP(usLock);
 }
 
 void Client::unlockUs() {
-    SDL_mutexV(usLock);
+    //SDL_mutexV(usLock);
 }
         
 bool Client::connect(char *host, int port) {

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <map>
+#include <vector>
 #include <SDL.h>
 #include <SDL_keysym.h>
 #include <SDL_mouse.h>
@@ -307,9 +308,18 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
 
+SDL_mutex *listlock = SDL_CreateMutex();
+std::vector<int> lists;
 int times = 0;
 
 void renderWorld(Client *client) {
+
+    SDL_mutexP(listlock);
+    while (!lists.empty()) {
+        glDeleteLists(lists.back(), 1);
+        lists.pop_back();
+    }
+    SDL_mutexV(listlock);
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -349,9 +359,10 @@ void renderWorld(Client *client) {
             Chunk *chunk = ci->second;
             if (chunk->dirty || !chunk->haslist) {
                 chunk->dirty = false;
-                if (chunk->haslist) glDeleteLists(chunk->list, 1);
-                chunk->haslist = true;
-                chunk->list = glGenLists(1);
+                if (!chunk->haslist) {
+                    chunk->haslist = true;
+                    chunk->list = glGenLists(1);
+                }
                 glNewList(chunk->list, GL_COMPILE);
                 drawStaticChunk(chunk,cx,cy,cz,px,py,pz);
                 glEndList();
@@ -369,7 +380,11 @@ void renderWorld(Client *client) {
 }
 
 void disposeChunk(Chunk *chunk) {
-    //sif (chunk->haslist) glDeleteLists(chunk->list, 1);
+    if (chunk->haslist) {
+        SDL_mutexP(listlock);
+        lists.push_back(chunk->list);
+        SDL_mutexV(listlock);
+    }
 }
 
 bool capture_mouse = true;
@@ -391,7 +406,7 @@ void processEvents(Client *client) {
                 }
                 break;
             case SDL_MOUSEMOTION:
-                if (capture_mouse) client->relLook(event.motion.yrel,event.motion.xrel);
+                if (capture_mouse) client->relLook(event.motion.yrel/2.0,event.motion.xrel/2.0);
                 break;
             case SDL_QUIT:
                 client->disconnect();
