@@ -19,7 +19,10 @@ class Player : public Entity {
         Player(char *name);
         virtual ~Player();
         
+        void boundingBox(int &sx,int &sy,int &sz,int &ex,int &ey,int &ez);
+        
         char *name;
+        double apothem; //width from center to outside edge
 };
 
 class Mob : public Entity {

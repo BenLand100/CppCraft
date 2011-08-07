@@ -113,6 +113,8 @@ class World {
         void lock();
         void unlock();
         
+        bool containsSolid(int sx,int sy,int sz,int ex,int ey,int ez);
+        
         
     private:
         std::map<ChunkPos,Chunk*> chunks;

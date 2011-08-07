@@ -376,9 +376,6 @@ void processEvents(Client *client) {
         switch (event.type) {
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
-                    case SDLK_SPACE:
-                        client->jump();
-                        break;
                     case SDLK_ESCAPE:
                         capture_mouse = !capture_mouse;
                         SDL_ShowCursor(capture_mouse ? SDL_DISABLE : 1);
@@ -394,6 +391,7 @@ void processEvents(Client *client) {
         }
     }
     unsigned char *keystate = SDL_GetKeyState(NULL);
+    if (keystate[SDLK_SPACE]) client->jump();
     double forwards = 5.0*(keystate[SDLK_w] ? 1 : keystate[SDLK_s] ? -1 : 0);
     double sideways = 5.0*(keystate[SDLK_d] ? 1 : keystate[SDLK_a] ? -1 : 0);
     client->setMotion(forwards,sideways);

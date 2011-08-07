@@ -54,24 +54,10 @@ bool Client::connect(char *host, int port) {
 int physics_thread(Client *client) {
     while (client->doPhysics) {
         SDL_Delay(50);
+        double dt = 0.05;
+        
         client->lockUs();
-        Block *feet = client->world.getBlock(client->us->x,client->us->y-0.05,client->us->z);
-        if (feet) switch (feet->type) {
-            case 0:
-                client->onGround = false;
-                break;
-        }
-        if (!client->onGround) {
-            if (feet) switch (feet->type) {
-                case 0:
-                    //client->us->vy -= 9.8*0.05;
-                    break;
-                default:
-                    //client->us->y = floor(client->us->y);
-                    //client->us->vy = 0.0;
-                    client->onGround = true;
-            }
-        }
+        
         if (client->forwards || client->sideways) {
             double fx = cos((client->us->yaw)/180.0*3.14159);
             double fz = sin((client->us->yaw)/180.0*3.14159);
@@ -82,13 +68,43 @@ int physics_thread(Client *client) {
             client->us->vz = 0;
         }
         
+        client->us->vy -= 9.8*dt;
+        
         if (client->us->vx > 5.0) client->us->vx = 5.0;
         if (client->us->vy > 10.0) client->us->vy = 5.0;
         if (client->us->vz > 5.0) client->us->vz = 5.0;
         
-        client->us->x += client->us->vx*0.05;
-        client->us->y += client->us->vy*0.05;
-        client->us->z += client->us->vz*0.05;
+        //bounding box in block coords
+        int sx,sy,sz,ex,ey,ez;
+        client->us->boundingBox(sx,sy,sz,ex,ey,ez);
+        
+        if (client->us->vx != 0) {
+            client->us->x += client->us->vx*dt;
+            int x = floor(client->us->x + (client->us->vx < 0 ? -1.0 : 1.0)*client->us->apothem); 
+            if (client->world.containsSolid(x,sy,sz,x,ey,ez)) {
+                client->us->x = x + ((client->us->vx > 0) ? -client->us->apothem : 1+client->us->apothem) * 1.001; //adjust slightly
+                client->us->vx = 0;
+            }
+        }
+        if (client->us->vz != 0) {
+            client->us->z += client->us->vz*dt;
+            int z = floor(client->us->z + (client->us->vz < 0 ? -1.0 : 1.0)*client->us->apothem); 
+            if (client->world.containsSolid(sx,sy,z,ex,ey,z)) {
+                client->us->z = z + ((client->us->vz > 0) ? -client->us->apothem : 1+client->us->apothem) * 1.001; //adjust slightly
+                client->us->vz = 0;
+            }
+        }
+        client->onGround = false;
+        if (client->us->vy != 0) {
+            client->us->y += client->us->vy*dt;
+            //position y at our feet or head relative to velocity
+            int y = floor(client->us->y + ((client->us->vy > 0) ? client->us->height : 0)); 
+            if (client->world.containsSolid(sx,y,sz,ex,y,ez)) {
+                client->us->y = y + ((client->us->vy > 0) ? -client->us->height : 1) * 1.001; //adjust slightly above/below
+                if (client->us->vy < 0) client->onGround = true;
+                client->us->vy = 0;
+            }
+        }
         
         client->sendPos();
         client->unlockUs();

@@ -101,6 +101,29 @@ void World::unlock() {
     //SDL_mutexV(chunklock);
 }
 
+bool World::containsSolid(int sx,int sy,int sz,int ex,int ey,int ez) {
+    int cx, cy, cz, tcx, tcy, tcz,lx,ly,lz;
+    chunkPos(sx,sy,sz,cx,cy,cz);
+    Chunk *c = getChunk(sx,sy,sz);
+    for (int x = sx; x <= ex; x++) {
+        for (int z = sz; z <= ez; z++) {
+            for (int y = sy; y <= ey; y++) {
+                chunkPos(x,y,z,tcx,tcy,tcz);
+                if (tcx != cx || tcy != cy || tcz != cz) {
+                    cx = tcx; cy = tcy; cz = tcz;
+                    c = getChunk(x,y,z);
+                }
+                if (!c) continue;
+                localPos(x,y,z,lx,ly,lz);
+                if (c->getBlock(lx,ly,lz)->type) { //SHOULD CHECK SOLIDITY
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 Block* World::getBlock(int x, int y, int z) {
     int lx,ly,lz;
     Chunk *c = getChunk(x,y,z);
