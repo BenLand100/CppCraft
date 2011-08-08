@@ -62,10 +62,18 @@ class ChunkPos {
         }
 };
 
+#define S_AIR           0
+#define S_DYNAMIC       1
+#define S_TRANSLUCENT   2
+#define S_SOLID         3
+
 class Block {
     public:
         inline Block() : type(0), meta(0), light(0), sky(15) { }
         inline ~Block() { }
+        
+        //see defines above
+        int style();
         
         int type;
         char meta,light,sky;
@@ -90,7 +98,7 @@ class Chunk {
         bool destroy,dirty,haslist;
         int list;
 
-    friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz);
+    friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz, unsigned char *transcoords, int &numtrans);
     friend void renderWorld(Client *client);
     friend void disposeChunk(Chunk *chunk);
 };

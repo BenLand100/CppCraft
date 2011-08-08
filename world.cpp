@@ -4,6 +4,14 @@
 #include "render.h"
 
 
+int Block::style() {
+    switch (type) {
+        case 0: return S_AIR;
+        case 9: case 18: return S_TRANSLUCENT;
+        default: return S_SOLID;
+    }
+}
+
 Chunk::Chunk() : dirty(true), haslist(false) {
 }
 

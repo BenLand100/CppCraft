@@ -32,9 +32,6 @@ GLvoid initGL(GLsizei width, GLsizei height) {
     glEnable(GL_PERSPECTIVE_CORRECTION_HINT);*/
     
     glEnable(GL_LIGHTING);
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT, GL_EMISSION);
     for (int i = 0; i < 16; i++) {
@@ -72,7 +69,7 @@ bool initRender() {
 
 //Face {0,1,2,3,4,5} == {-y,+y,-z,+z,-x,+x}
 //Result indicates static block if true (used in make display lists)
-inline bool setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
+inline void setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
     float r=1.0f,g=1.0f,b=1.0f;
     switch (block.type) {
         case 1:
@@ -130,97 +127,91 @@ inline bool setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
             break;
     }
     glColor3f(r*f,g*f,b*f);
-    return true;
 }
 
 inline void drawTop(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    if (setBlock(b,l,1,tx,ty)) {
-        glTexCoord2i(tx+1,ty);
-        glVertex3i(1+x, 1+y, z);
-        glTexCoord2i(tx,ty);
-        glVertex3i(x, 1+y, z);
-        glTexCoord2i(tx,ty+1);
-        glVertex3i(x, 1+y, 1+z);
-        glTexCoord2i(tx+1,ty+1);
-        glVertex3i(1+x, 1+y, 1+z);
-    }
+    setBlock(b,l,1,tx,ty);
+    glTexCoord2i(tx+1,ty);
+    glVertex3i(1+x, 1+y, z);
+    glTexCoord2i(tx,ty);
+    glVertex3i(x, 1+y, z);
+    glTexCoord2i(tx,ty+1);
+    glVertex3i(x, 1+y, 1+z);
+    glTexCoord2i(tx+1,ty+1);
+    glVertex3i(1+x, 1+y, 1+z);
 }
 
 //called from the position below
 inline void drawBottom(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    if (setBlock(b,l,0,tx,ty)) {
-        glTexCoord2i(tx+1,ty);
-        glVertex3i(1+x, 1+y, z);
-        glTexCoord2i(tx,ty);
-        glVertex3i(x, 1+y, z);
-        glTexCoord2i(tx,ty+1);
-        glVertex3i(x, 1+y, 1+z);
-        glTexCoord2i(tx+1,ty+1);
-        glVertex3i(1+x, 1+y, 1+z);
-    }
+    setBlock(b,l,0,tx,ty);
+    glTexCoord2i(tx+1,ty);
+    glVertex3i(1+x, 1+y, z);
+    glTexCoord2i(tx,ty);
+    glVertex3i(x, 1+y, z);
+    glTexCoord2i(tx,ty+1);
+    glVertex3i(x, 1+y, 1+z);
+    glTexCoord2i(tx+1,ty+1);
+    glVertex3i(1+x, 1+y, 1+z);
 }
 
 inline void drawFront(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    if (setBlock(b,l,3,tx,ty)) {
-        glTexCoord2i(tx+1,ty);
-        glVertex3i(1+x, 1+y, 1+z);
-        glTexCoord2i(tx,ty);
-        glVertex3i(x, 1+y, 1+z);
-        glTexCoord2i(tx,ty+1);
-        glVertex3i(x, y, 1+z);
-        glTexCoord2i(tx+1,ty+1);
-        glVertex3i(1+x, y, 1+z);
-    }
+    setBlock(b,l,3,tx,ty);
+    glTexCoord2i(tx+1,ty);
+    glVertex3i(1+x, 1+y, 1+z);
+    glTexCoord2i(tx,ty);
+    glVertex3i(x, 1+y, 1+z);
+    glTexCoord2i(tx,ty+1);
+    glVertex3i(x, y, 1+z);
+    glTexCoord2i(tx+1,ty+1);
+    glVertex3i(1+x, y, 1+z);
 }
 
 //called from the position behind
 inline void drawBack(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    if (setBlock(b,l,2,tx,ty)) {
-        glTexCoord2i(tx+1,ty);
-        glVertex3i(1+x, 1+y, 1+z);
-        glTexCoord2i(tx,ty);
-        glVertex3i(x, 1+y, 1+z);
-        glTexCoord2i(tx,ty+1);
-        glVertex3i(x, y, 1+z);
-        glTexCoord2i(tx+1,ty+1);
-        glVertex3i(1+x, y, 1+z);
-    }
+    setBlock(b,l,2,tx,ty);
+    glTexCoord2i(tx+1,ty);
+    glVertex3i(1+x, 1+y, 1+z);
+    glTexCoord2i(tx,ty);
+    glVertex3i(x, 1+y, 1+z);
+    glTexCoord2i(tx,ty+1);
+    glVertex3i(x, y, 1+z);
+    glTexCoord2i(tx+1,ty+1);
+    glVertex3i(1+x, y, 1+z);
 }
 
 inline void drawRight(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    if (setBlock(b,l,5,tx,ty)) {
-        glTexCoord2i(tx,ty);
-        glVertex3i(1+x, 1+y, 1+z);
-        glTexCoord2i(tx+1,ty);
-        glVertex3i(1+x, 1+y, z);
-        glTexCoord2i(tx+1,ty+1);
-        glVertex3i(1+x, y, z);
-        glTexCoord2i(tx,ty+1);
-        glVertex3i(1+x, y, 1+z);
-    }
+    setBlock(b,l,5,tx,ty);
+    glTexCoord2i(tx,ty);
+    glVertex3i(1+x, 1+y, 1+z);
+    glTexCoord2i(tx+1,ty);
+    glVertex3i(1+x, 1+y, z);
+    glTexCoord2i(tx+1,ty+1);
+    glVertex3i(1+x, y, z);
+    glTexCoord2i(tx,ty+1);
+    glVertex3i(1+x, y, 1+z);
 }
 
 //called from the position right
 inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    if (setBlock(b,l,4,tx,ty)) {
-        glTexCoord2i(tx+1,ty);
-        glVertex3i(1+x, 1+y, 1+z);
-        glTexCoord2i(tx,ty);
-        glVertex3i(1+x, 1+y, z);
-        glTexCoord2i(tx,ty+1);
-        glVertex3i(1+x, y, z);
-        glTexCoord2i(tx+1,ty+1);
-        glVertex3i(1+x, y, 1+z);
-    }
+    setBlock(b,l,4,tx,ty);
+    glTexCoord2i(tx+1,ty);
+    glVertex3i(1+x, 1+y, 1+z);
+    glTexCoord2i(tx,ty);
+    glVertex3i(1+x, 1+y, z);
+    glTexCoord2i(tx,ty+1);
+    glVertex3i(1+x, y, z);
+    glTexCoord2i(tx+1,ty+1);
+    glVertex3i(1+x, y, 1+z);
 }
 
-inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz) {
+inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz, unsigned char *transcoords, int &numtrans) {
+    numtrans = 0;
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
@@ -251,37 +242,93 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py
             int y = 0;
             if (col[0].type) drawBottom(col[0],sky,x,-1,z); //SHOULD CHECK TRANSPARENCY
             for (y = 0; y < 128; y++) {
-                if (!col[y].type) {  //SHOULD CHECK TRANSPARENCY 
-                    if (y < 127 && col[y+1].type) { //SHOULD CHECK TRANSPARENCY
-                        drawBottom(col[y+1],col[y],x,y,z);
-                    }
-                    if (x < 15 && nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawLeft(nslicecol[y],col[y],x,y,z);
-                    }
-                    if (z < 15 && ncol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawBack(ncol[y],col[y],x,y,z);
-                    }
-                } else {
-                    if (y == 127) {
-                        drawTop(col[y],sky,x,y,z);
-                    } else if (!col[y+1].type) { //SHOULD CHECK TRANSPARENCY
-                        drawTop(col[y],col[y+1],x,y,z);
-                    }
-                    if (x == 15) {
-                        drawRight(col[y],sky,x,y,z);
-                    } else if (!nslicecol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawRight(col[y],nslicecol[y],x,y,z);
-                    }
-                    if (z == 15) {
-                        drawFront(col[y],sky,x,y,z);
-                    } else if (!ncol[y].type) { //SHOULD CHECK TRANSPARENCY
-                        drawFront(col[y],ncol[y],x,y,z);
-                    }
+                switch (col[y].style()) {
+                    case S_TRANSLUCENT:
+                        transcoords[numtrans*3+0] = x;
+                        transcoords[numtrans*3+1] = y;
+                        transcoords[numtrans*3+2] = z;
+                        numtrans++;
+                    case S_DYNAMIC:
+                    case S_AIR:
+                        if (y < 127 && col[y+1].style() == S_SOLID) {
+                            drawBottom(col[y+1],col[y],x,y,z);
+                        }
+                        if (x < 15 && nslicecol[y].style() == S_SOLID) { 
+                            drawLeft(nslicecol[y],col[y],x,y,z);
+                        }
+                        if (z < 15 && ncol[y].style() == S_SOLID) {
+                            drawBack(ncol[y],col[y],x,y,z);
+                        }
+                        break;
+                    case S_SOLID:
+                        if (y == 127) {
+                            drawTop(col[y],sky,x,y,z);
+                        } else if (col[y+1].style() != S_SOLID) {
+                            drawTop(col[y],col[y+1],x,y,z);
+                        }
+                        if (x == 15) {
+                            drawRight(col[y],sky,x,y,z);
+                        } else if (nslicecol[y].style() != S_SOLID) {
+                            drawRight(col[y],nslicecol[y],x,y,z);
+                        }
+                        if (z == 15) {
+                            drawFront(col[y],sky,x,y,z);
+                        } else if (ncol[y].style() != S_SOLID) {
+                            drawFront(col[y],ncol[y],x,y,z);
+                        }
+                        break;
                 }
             }
         }
     }
     glEnd();
+    
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+    glBegin(GL_QUADS);
+    for (int i = 0; i < numtrans; i++) {
+        unsigned char x = transcoords[i*3+0];
+        unsigned char y = transcoords[i*3+1];
+        unsigned char z = transcoords[i*3+2];
+        Block *here = &blocks[(x*16+z)*128+y];
+        Block *up = here + 1;
+        Block *front = here + 128;
+        Block *right = here + 128*16;
+        if (y == 127) {
+            drawTop(here[0],sky,x,y,z);
+        } else if (here[1].style() < S_TRANSLUCENT) {
+            drawTop(here[0],here[1],x,y,z);
+        }
+        if (y == 0) {
+            drawBottom(here[0],sky,x,-1,z);
+        } else if (here[-1].style() < S_TRANSLUCENT) {
+            drawBottom(here[0],here[-1],x,y-1,z);
+        }
+        if (x == 15) {
+            drawRight(*here,sky,x,y,z);
+        } else if (right->style() < S_TRANSLUCENT) {
+            drawRight(*here,*right,x,y,z);
+        }
+        if (x == 0) {
+            drawLeft(here[0],sky,-1,y,z);
+        } else if (here[-128*16].style() < S_TRANSLUCENT) {
+            drawLeft(here[0],here[-128*16],x-1,y,z);
+        }
+        if (z == 15) {
+            drawFront(*here,sky,x,y,z);
+        } else if (front->style() < S_TRANSLUCENT) {
+            drawFront(*here,*front,x,y,z);
+        }
+        if (z == 0) {
+            drawBack(here[0],sky,x,y,-1);
+        } else if (here[-128].style() < S_TRANSLUCENT) {
+            drawBack(here[0],here[-128],x,y,z-1);
+        }
+    }
+    glEnd();
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
     
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
@@ -319,6 +366,9 @@ void renderWorld(Client *client) {
 
     int time = SDL_GetTicks();
     
+    unsigned char transcoords[16*16*128*3];
+    int numtrans;
+    
     client->world.lock();
     std::map<ChunkPos,Chunk*>::iterator ci = client->world.chunks.begin();
     std::map<ChunkPos,Chunk*>::iterator end = client->world.chunks.end();
@@ -345,7 +395,7 @@ void renderWorld(Client *client) {
                     num++;
                 }
                 glNewList(chunk->list, GL_COMPILE);
-                drawStaticChunk(chunk,cx,cy,cz,px,py,pz);
+                drawStaticChunk(chunk,cx,cy,cz,px,py,pz,transcoords,numtrans);
                 glEndList();
             }
             glCallList(chunk->list);
