@@ -61,8 +61,8 @@ bool initRender() {
         fprintf(stderr, "Unable to create openGL scene %s", SDL_GetError());
         return false;
     }
-    SDL_WM_GrabInput(SDL_GRAB_ON);
-    SDL_ShowCursor(SDL_DISABLE);
+    //SDL_WM_GrabInput(SDL_GRAB_ON);
+    //SDL_ShowCursor(SDL_DISABLE);
     initGL(w_width, w_height);
     return true;
 }
@@ -240,7 +240,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, std::map<Chunk
             for (y = 0; y < 128; y++) {
                 switch (col[y].style()) {
                     case S_TRANSLUCENT:
-                        translucent[ChunkPos(x,y,z)] = &col[y];
+                        translucent[ChunkPos(x+tx,y+ty,z+tz)] = &col[y];
                     case S_DYNAMIC:
                     case S_AIR:
                         if (y < 127 && col[y+1].style() == S_SOLID) {
@@ -293,9 +293,7 @@ inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, std::map<
     std::map<ChunkPos,Block*>::iterator i = translucent.begin();
     std::map<ChunkPos,Block*>::iterator end = translucent.end();
     for ( ; i != end; i++) {
-        int x = i->first.cx;
-        int y = i->first.cy;
-        int z = i->first.cz;
+        int x,y,z; localPos(i->first.cx,i->first.cy,i->first.cz,x,y,z);
         Block *here = i->second;
         Block *up = here + 1;
         Block *front = here + 128;
@@ -373,7 +371,7 @@ void renderWorld(Client *client) {
 
     int time = SDL_GetTicks();
     
-    std::map<ChunkPos,Chunk*,Back2Front> visible(Back2Front(cx,cy,cz));
+    std::map<ChunkPos,Chunk*,Back2Front> visible(Back2Front(cx+0.1,cy+0.1,cz+0.1));
     std::map<ChunkPos,Block*,Back2Front> translucent(Back2Front(px,py,pz));
     
     client->world.lock();
