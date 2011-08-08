@@ -369,18 +369,20 @@ void renderWorld(Client *client) {
     double pz = client->us->z;
     glTranslatef(-px, -py, -pz); 
 
+    int cx,cy,cz; chunkPos(px,py,pz,cx,cy,cz);
+
     int time = SDL_GetTicks();
     
-    std::vector<Chunk*> visible;
+    std::map<ChunkPos,Chunk*,Back2Front> visible(Back2Front(cx,cy,cz));
     std::map<ChunkPos,Block*,Back2Front> translucent(Back2Front(px,py,pz));
     
     client->world.lock();
     std::map<ChunkPos,Chunk*>::iterator ci = client->world.chunks.begin();
     std::map<ChunkPos,Chunk*>::iterator end = client->world.chunks.end();
     for ( ; ci != end; ci++) {
-        int cx = ci->first.cx;
-        int cy = ci->first.cy;
-        int cz = ci->first.cz;
+        cx = ci->first.cx;
+        cy = ci->first.cy;
+        cz = ci->first.cz;
         int wx,wy,wz;
         worldPos(cx,cy,cz,wx,wy,wz);
         wx += 8 - px;
@@ -390,7 +392,7 @@ void renderWorld(Client *client) {
         //only render IF the chunk center is less than 40 blocks from us or in the 180 degree FOV in front of us
         if (len < 40 || abs(angle) <= 90.0/180.0*3.14159) {
             Chunk *chunk = ci->second;
-            visible.push_back(chunk);
+            visible[ChunkPos(cx,cy,cz)] = chunk;
             if (len < 20 || chunk->dirty || !chunk->haslist) {
                 chunk->dirty = false;
                 if (!chunk->haslist) {
@@ -409,8 +411,10 @@ void renderWorld(Client *client) {
             glCallList(chunk->list);
         }
     }
-    for (int i = 0; i < visible.size(); i++) {
-        glCallList(visible[i]->list+1);
+    std::map<ChunkPos,Chunk*,Back2Front>::iterator vi = visible.begin();
+    std::map<ChunkPos,Chunk*,Back2Front>::iterator vend = visible.end();
+    for ( ; vi != vend; vi++) {
+        glCallList(vi->second->list+1);
     }
     client->world.unlock();
     time = SDL_GetTicks()-time;
