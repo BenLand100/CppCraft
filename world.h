@@ -79,6 +79,9 @@ class Block {
         char meta,light,sky;
 };
 
+//forward decleration
+class Back2Front;
+
 class Chunk {
     public:
         Chunk();
@@ -98,8 +101,8 @@ class Chunk {
         bool destroy,dirty,haslist;
         int list;
 
-    friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, unsigned char *transcoords, int &numtrans);
-    friend void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, unsigned char *transcoords, int &numtrans);
+    friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, std::map<ChunkPos,Block*,Back2Front> &translucent);
+    friend void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, std::map<ChunkPos,Block*,Back2Front> &translucent);
     friend void renderWorld(Client *client);
     friend void disposeChunk(Chunk *chunk);
 };

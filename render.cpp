@@ -210,8 +210,7 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     glVertex3i(1+x, y, 1+z);
 }
 
-inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, unsigned char *transcoords, int &numtrans) {
-    numtrans = 0;
+inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, std::map<ChunkPos,Block*,Back2Front> &translucent) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
@@ -241,10 +240,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, unsigned char 
             for (y = 0; y < 128; y++) {
                 switch (col[y].style()) {
                     case S_TRANSLUCENT:
-                        transcoords[numtrans*3+0] = x;
-                        transcoords[numtrans*3+1] = y;
-                        transcoords[numtrans*3+2] = z;
-                        numtrans++;
+                        translucent[ChunkPos(x,y,z)] = &col[y];
                     case S_DYNAMIC:
                     case S_AIR:
                         if (y < 127 && col[y+1].style() == S_SOLID) {
@@ -282,7 +278,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, unsigned char 
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
 
-inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, unsigned char *transcoords, int &numtrans) {
+inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, std::map<ChunkPos,Block*,Back2Front> &translucent) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
@@ -294,11 +290,13 @@ inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, unsigned 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
     glBegin(GL_QUADS);
-    for (int i = 0; i < numtrans; i++) {
-        unsigned char x = transcoords[i*3+0];
-        unsigned char y = transcoords[i*3+1];
-        unsigned char z = transcoords[i*3+2];
-        Block *here = &blocks[(x*16+z)*128+y];
+    std::map<ChunkPos,Block*>::iterator i = translucent.begin();
+    std::map<ChunkPos,Block*>::iterator end = translucent.end();
+    for ( ; i != end; i++) {
+        int x = i->first.cx;
+        int y = i->first.cy;
+        int z = i->first.cz;
+        Block *here = i->second;
         Block *up = here + 1;
         Block *front = here + 128;
         Block *right = here + 128*16;
@@ -345,8 +343,6 @@ std::vector<int> lists;
 int times = 0;
 int num = 0;
 
-double px, py, pz;
-
 void renderWorld(Client *client) {
 
     SDL_mutexP(listlock);
@@ -368,16 +364,15 @@ void renderWorld(Client *client) {
     glRotatef(client->us->pitch, 1.0f, 0.0f, 0.0f);
     glRotatef(client->us->yaw+90.0f, 0.0f, 1.0f, 0.0f);
     
-    px = client->us->x;
-    py = client->us->y+client->us->height;
-    pz = client->us->z;
+    double px = client->us->x;
+    double py = client->us->y+client->us->height;
+    double pz = client->us->z;
     glTranslatef(-px, -py, -pz); 
 
     int time = SDL_GetTicks();
     
     std::vector<Chunk*> visible;
-    unsigned char transcoords[16*16*128*3];
-    int numtrans;
+    std::map<ChunkPos,Block*,Back2Front> translucent(Back2Front(px,py,pz));
     
     client->world.lock();
     std::map<ChunkPos,Chunk*>::iterator ci = client->world.chunks.begin();
@@ -396,7 +391,7 @@ void renderWorld(Client *client) {
         if (len < 40 || abs(angle) <= 90.0/180.0*3.14159) {
             Chunk *chunk = ci->second;
             visible.push_back(chunk);
-            if (chunk->dirty || !chunk->haslist) {
+            if (len < 20 || chunk->dirty || !chunk->haslist) {
                 chunk->dirty = false;
                 if (!chunk->haslist) {
                     chunk->haslist = true;
@@ -404,11 +399,12 @@ void renderWorld(Client *client) {
                     num++;
                 }
                 glNewList(chunk->list, GL_COMPILE);
-                drawStaticChunk(chunk,cx,cy,cz,transcoords,numtrans);
+                drawStaticChunk(chunk,cx,cy,cz,translucent);
                 glEndList();
                 glNewList(chunk->list+1, GL_COMPILE);
-                drawTranslucentChunk(chunk,cx,cy,cz,transcoords,numtrans);
+                drawTranslucentChunk(chunk,cx,cy,cz,translucent);
                 glEndList();
+                translucent.clear();
             }
             glCallList(chunk->list);
         }
