@@ -98,7 +98,8 @@ class Chunk {
         bool destroy,dirty,haslist;
         int list;
 
-    friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz, unsigned char *transcoords, int &numtrans);
+    friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, unsigned char *transcoords, int &numtrans);
+    friend void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, unsigned char *transcoords, int &numtrans);
     friend void renderWorld(Client *client);
     friend void disposeChunk(Chunk *chunk);
 };

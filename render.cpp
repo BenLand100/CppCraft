@@ -210,14 +210,11 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     glVertex3i(1+x, y, 1+z);
 }
 
-inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py, int pz, unsigned char *transcoords, int &numtrans) {
+inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, unsigned char *transcoords, int &numtrans) {
     numtrans = 0;
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
-    px -= tx;
-    py -= ty;
-    pz -= tz;
     
     Block sky; //default constructor
     Block *blocks = chunk->blocks;
@@ -282,6 +279,16 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, int px, int py
         }
     }
     glEnd();
+    glTranslatef((float)-tx,(float)-ty,(float)-tz);
+}
+
+inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, unsigned char *transcoords, int &numtrans) {
+    int tx,ty,tz;
+    worldPos(cx,cy,cz,tx,ty,tz);
+    glTranslatef((float)tx,(float)ty,(float)tz);
+    
+    Block sky; //default constructor
+    Block *blocks = chunk->blocks;
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -338,12 +345,14 @@ std::vector<int> lists;
 int times = 0;
 int num = 0;
 
+double px, py, pz;
+
 void renderWorld(Client *client) {
 
     SDL_mutexP(listlock);
     while (!lists.empty()) {
         //std::cout << "Freeing display list (" << std::dec << num-- << ") " << lists.back() << '\n';
-        glDeleteLists(lists.back(), 1);
+        glDeleteLists(lists.back(), 2);
         lists.pop_back();
     }
     SDL_mutexV(listlock);
@@ -359,20 +368,20 @@ void renderWorld(Client *client) {
     glRotatef(client->us->pitch, 1.0f, 0.0f, 0.0f);
     glRotatef(client->us->yaw+90.0f, 0.0f, 1.0f, 0.0f);
     
-    double px = client->us->x;
-    double py = client->us->y+client->us->height;
-    double pz = client->us->z;
+    px = client->us->x;
+    py = client->us->y+client->us->height;
+    pz = client->us->z;
     glTranslatef(-px, -py, -pz); 
 
     int time = SDL_GetTicks();
     
+    std::vector<Chunk*> visible;
     unsigned char transcoords[16*16*128*3];
     int numtrans;
     
     client->world.lock();
     std::map<ChunkPos,Chunk*>::iterator ci = client->world.chunks.begin();
     std::map<ChunkPos,Chunk*>::iterator end = client->world.chunks.end();
-    int i = 0;
     for ( ; ci != end; ci++) {
         int cx = ci->first.cx;
         int cy = ci->first.cy;
@@ -384,22 +393,28 @@ void renderWorld(Client *client) {
         double len  = sqrt(wx*wx+wz*wz);
         double angle = acos((wx*fx+wz*fz)/len);
         //only render IF the chunk center is less than 40 blocks from us or in the 180 degree FOV in front of us
-        if (len < 40 || abs(angle) <= 90.0/180.0*3.14159) { 
-            i++;
+        if (len < 40 || abs(angle) <= 90.0/180.0*3.14159) {
             Chunk *chunk = ci->second;
+            visible.push_back(chunk);
             if (chunk->dirty || !chunk->haslist) {
                 chunk->dirty = false;
                 if (!chunk->haslist) {
                     chunk->haslist = true;
-                    chunk->list = glGenLists(1);
+                    chunk->list = glGenLists(2);
                     num++;
                 }
                 glNewList(chunk->list, GL_COMPILE);
-                drawStaticChunk(chunk,cx,cy,cz,px,py,pz,transcoords,numtrans);
+                drawStaticChunk(chunk,cx,cy,cz,transcoords,numtrans);
+                glEndList();
+                glNewList(chunk->list+1, GL_COMPILE);
+                drawTranslucentChunk(chunk,cx,cy,cz,transcoords,numtrans);
                 glEndList();
             }
             glCallList(chunk->list);
         }
+    }
+    for (int i = 0; i < visible.size(); i++) {
+        glCallList(visible[i]->list+1);
     }
     client->world.unlock();
     time = SDL_GetTicks()-time;
@@ -407,7 +422,7 @@ void renderWorld(Client *client) {
     glFlush(); 
     SDL_GL_SwapBuffers();
     
-    if (!(times++ % 30)) std::cout << "Rendered in " << std::dec << time << " ms (" << (float)time/i << " per chunk)\n";
+    if (!(times++ % 30)) std::cout << "Rendered in " << std::dec << time << " ms (" << (float)time/visible.size() << " per chunk)\n";
 }
 
 void disposeChunk(Chunk *chunk) {
