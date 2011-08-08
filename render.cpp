@@ -210,7 +210,7 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     glVertex3i(1+x, y, 1+z);
 }
 
-inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, std::map<ChunkPos,Block*,Back2Front> &translucent) {
+inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<ChunkPos,Block*,Back2Front> &translucent) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
@@ -219,25 +219,13 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, std::map<Chunk
     Block *blocks = chunk->blocks;
     
     glBegin(GL_QUADS);
-    int x = 0;
-    for (int z = 0; z < 16; z++) {
-        for (int y = 0; y < 128; y++) {
-            if (blocks[z*128+y].type) drawLeft(blocks[z*128+y],sky,-1,y,z); //SHOULD CHECK TRANSPARENCY
-        }
-    }
-    for (x = 0; x < 16; x++) {
+    for (int x = 0; x < 16; x++) {
         Block *slice = &blocks[x*16*128];
-        int z = 0;
-        for (int y = 0; y < 128; y++) {
-            if (slice[y].type) drawBack(slice[y],sky,x,y,-1); //SHOULD CHECK TRANSPARENCY
-        }
-        for (z = 0; z < 16; z++) {
+        for (int z = 0; z < 16; z++) {
             Block *col = &slice[z*128];
             Block *ncol = &col[128];
             Block *nslicecol = &col[16*128];
-            int y = 0;
-            if (col[0].type) drawBottom(col[0],sky,x,-1,z); //SHOULD CHECK TRANSPARENCY
-            for (y = 0; y < 128; y++) {
+            for (int y = 0; y < 128; y++) {
                 switch (col[y].style()) {
                     case S_TRANSLUCENT:
                         translucent[ChunkPos(x+tx,y+ty,z+tz)] = &col[y];
@@ -254,18 +242,53 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, std::map<Chunk
                         }
                         break;
                     case S_SOLID:
+                        if (y == 0) {
+                            if (cbottom) {
+                                drawBottom(col[0],cbottom->blocks[(x*16+z)*128+127],x,-1,z);
+                            } else {
+                                drawBottom(col[0],sky,x,-1,z);
+                            }
+                        }
                         if (y == 127) {
-                            drawTop(col[y],sky,x,y,z);
+                            if (ctop) {
+                                drawTop(col[127],ctop->blocks[(x*16+z)*128+0],x,127,z);
+                            } else {
+                                drawTop(col[127],sky,x,127,z);
+                            }
                         } else if (col[y+1].style() != S_SOLID) {
                             drawTop(col[y],col[y+1],x,y,z);
                         }
+                        
+                        if (x == 0) {
+                            if (cleft) {
+                                drawLeft(col[y],cleft->blocks[(15*16+z)*128+y],-1,y,z);
+                            } else {
+                                drawLeft(col[y],sky,-1,y,z);
+                            }
+                        }
                         if (x == 15) {
-                            drawRight(col[y],sky,x,y,z);
+                            if (cright) {
+                                drawRight(col[y],cright->blocks[(0*16+z)*128+y],15,y,z);
+                            } else {
+                                drawRight(col[y],sky,15,y,z);
+                            }
                         } else if (nslicecol[y].style() != S_SOLID) {
                             drawRight(col[y],nslicecol[y],x,y,z);
                         }
+                        
+                        if (z == 0) {
+                            if (cback) {
+                                drawBack(col[y],cback->blocks[(x*16+15)*128+y],x,y,-1);
+                            } else {
+                                drawBack(col[y],sky,x,y,-1);
+                            }
+                        }
                         if (z == 15) {
-                            drawFront(col[y],sky,x,y,z);
+                            if (cfront) {
+                                drawFront(col[y],cfront->blocks[(x*16+0)*128+y],x,y,15);
+                            } else {
+                                drawFront(col[y],sky,x,y,15);
+                            }
                         } else if (ncol[y].style() != S_SOLID) {
                             drawFront(col[y],ncol[y],x,y,z);
                         }
@@ -399,7 +422,14 @@ void renderWorld(Client *client) {
                     num++;
                 }
                 glNewList(chunk->list, GL_COMPILE);
-                drawStaticChunk(chunk,cx,cy,cz,translucent);
+                drawStaticChunk(chunk,cx,cy,cz,
+                    client->world.getChunk(cx,cy+1,cz),
+                    client->world.getChunk(cx,cy-1,cz),
+                    client->world.getChunk(cx+1,cy,cz),
+                    client->world.getChunk(cx-1,cy,cz),
+                    client->world.getChunk(cx,cy,cz+1),
+                    client->world.getChunk(cx,cy,cz-1),
+                    translucent);
                 glEndList();
                 glNewList(chunk->list+1, GL_COMPILE);
                 drawTranslucentChunk(chunk,cx,cy,cz,translucent);
