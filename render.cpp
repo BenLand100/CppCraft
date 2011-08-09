@@ -67,7 +67,7 @@ bool initRender() {
     return true;
 }
 
-//Face {0,1,2,3,4,5} == {-y,+y,-z,+z,-x,+x}
+//Face {0,1,2,3,4,5,6} == {-y,+y,-z,+z,-x,+x,decor}
 //Result indicates static block if true (used in make display lists)
 inline void setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
     float r=1.0f,g=1.0f,b=1.0f;
@@ -113,11 +113,19 @@ inline void setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
             }
             break;
             
+        case 20:
+            tx = 1; ty = 3; break;
+            
+        case 31: tx = 7; ty = 2; r = 0.2; b = 0.3; break;
+        case 32: tx = 7; ty = 3;
+        case 37: tx = 13; ty = 0; break;
+        case 38: tx = 12; ty = 0; break;
+            
         default:
             tx = 0; ty = 0; g = 0.0f; b = 0.0f;
             
     }
-    float f = intensity[l.sky < 16 ? l.sky : 15];
+    float f = intensity[l.sky+l.light < 16 ? l.sky+l.light : 15];
     switch (face) {
         case 2: case 3:
             f *= 0.8; break;
@@ -210,7 +218,29 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     glVertex3i(1+x, y, 1+z);
 }
 
-inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<ChunkPos,Block*,Back2Front> &translucent) {
+inline void drawDecoration(Block &b, int x, int y, int z) {
+    int tx,ty;
+    setBlock(b,b,6,tx,ty);
+    glTexCoord2i(tx,ty+1);
+    glVertex3i(x, y, z);
+    glTexCoord2i(tx+1,ty+1);
+    glVertex3i(1+x, y, 1+z);
+    glTexCoord2i(tx+1,ty);
+    glVertex3i(1+x, 1+y, 1+z);
+    glTexCoord2i(tx,ty);
+    glVertex3i(x, 1+y, z);
+    
+    glTexCoord2i(tx,ty+1);
+    glVertex3i(1+x, y, z);
+    glTexCoord2i(tx+1,ty+1);
+    glVertex3i(x, y, 1+z);
+    glTexCoord2i(tx+1,ty);
+    glVertex3i(x, 1+y, 1+z);
+    glTexCoord2i(tx,ty);
+    glVertex3i(1+x, 1+y, z);
+}
+
+inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<Pos3D,Block*,Back2Front> &translucent) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
@@ -226,22 +256,21 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
             Block *ncol = &col[128];
             Block *nslicecol = &col[16*128];
             for (int y = 0; y < 128; y++) {
-                switch (col[y].style()) {
+                switch (col[y].opacity()) {
                     case S_TRANSLUCENT:
-                        translucent[ChunkPos(x+tx,y+ty,z+tz)] = &col[y];
-                    case S_DYNAMIC:
+                        translucent[Pos3D(x+tx,y+ty,z+tz)] = &col[y];
                     case S_AIR:
-                        if (y < 127 && col[y+1].style() == S_SOLID) {
+                        if (y < 127 && col[y+1].opacity() == S_OPAQUE) {
                             drawBottom(col[y+1],col[y],x,y,z);
                         }
-                        if (x < 15 && nslicecol[y].style() == S_SOLID) { 
+                        if (x < 15 && nslicecol[y].opacity() == S_OPAQUE) { 
                             drawLeft(nslicecol[y],col[y],x,y,z);
                         }
-                        if (z < 15 && ncol[y].style() == S_SOLID) {
+                        if (z < 15 && ncol[y].opacity() == S_OPAQUE) {
                             drawBack(ncol[y],col[y],x,y,z);
                         }
                         break;
-                    case S_SOLID:
+                    case S_OPAQUE:
                         if (y == 0) {
                             if (cbottom) {
                                 drawBottom(col[0],cbottom->blocks[(x*16+z)*128+127],x,-1,z);
@@ -255,7 +284,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
                             } else {
                                 drawTop(col[127],sky,x,127,z);
                             }
-                        } else if (col[y+1].style() != S_SOLID) {
+                        } else if (col[y+1].opacity() != S_OPAQUE) {
                             drawTop(col[y],col[y+1],x,y,z);
                         }
                         
@@ -272,7 +301,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
                             } else {
                                 drawRight(col[y],sky,15,y,z);
                             }
-                        } else if (nslicecol[y].style() != S_SOLID) {
+                        } else if (nslicecol[y].opacity() != S_OPAQUE) {
                             drawRight(col[y],nslicecol[y],x,y,z);
                         }
                         
@@ -289,7 +318,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
                             } else {
                                 drawFront(col[y],sky,x,y,15);
                             }
-                        } else if (ncol[y].style() != S_SOLID) {
+                        } else if (ncol[y].opacity() != S_OPAQUE) {
                             drawFront(col[y],ncol[y],x,y,z);
                         }
                         break;
@@ -301,7 +330,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
 
-inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<ChunkPos,Block*,Back2Front> &translucent) {
+inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<Pos3D,Block*,Back2Front> &translucent) {
     int tx,ty,tz;
     worldPos(cx,cy,cz,tx,ty,tz);
     glTranslatef((float)tx,(float)ty,(float)tz);
@@ -313,70 +342,80 @@ inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ct
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
     glBegin(GL_QUADS);
-    std::map<ChunkPos,Block*>::iterator i = translucent.begin();
-    std::map<ChunkPos,Block*>::iterator end = translucent.end();
+    std::map<Pos3D,Block*>::iterator i = translucent.begin();
+    std::map<Pos3D,Block*>::iterator end = translucent.end();
     for ( ; i != end; i++) {
         int x,y,z; localPos(i->first.cx,i->first.cy,i->first.cz,x,y,z);
         Block *here = i->second;
-        if (y == 127) {
-            if (ctop) {
-                if (ctop->blocks[(x*16+z)*128+0].style() < S_TRANSLUCENT)
-                    drawTop(here[0],ctop->blocks[(x*16+z)*128+0],x,127,z);
-            } else {
-                drawTop(here[0],sky,x,127,z);
-            }
-        } else if (here[1].style() < S_TRANSLUCENT) {
-            drawTop(here[0],here[1],x,y,z);
-        }
-        if (y == 0) {
-            if (cbottom) {
-                if (cbottom->blocks[(x*16+z)*128+127].style() < S_TRANSLUCENT) 
-                    drawBottom(here[0],cbottom->blocks[(x*16+z)*128+127],x,-1,z);
-            } else {
-                drawBottom(here[0],sky,x,-1,z);
-            }
-        } else if (here[-1].style() < S_TRANSLUCENT) {
-            drawBottom(here[0],here[-1],x,y-1,z);
-        }
-        if (x == 15) {
-            if (cright) {
-                if (cright->blocks[(0*16+z)*128+y].style() < S_TRANSLUCENT)
-                    drawRight(here[0],cright->blocks[(0*16+z)*128+y],15,y,z);
-            } else {
-                drawRight(here[0],sky,15,y,z);
-            }
-        } else if (here[128*16].style() < S_TRANSLUCENT) {
-            drawRight(here[0],here[128*16],x,y,z);
-        }
-        if (x == 0) {
-            if (cleft) { 
-                if (cleft->blocks[(15*16+z)*128+y].style() < S_TRANSLUCENT)
-                    drawLeft(here[0],cleft->blocks[(15*16+z)*128+y],-1,y,z);
-            } else {
-                drawLeft(here[0],sky,-1,y,z);
-            }
-        } else if (here[-128*16].style() < S_TRANSLUCENT) {
-            drawLeft(here[0],here[-128*16],x-1,y,z);
-        }
-        if (z == 15) {
-            if (cfront) {
-                if (cfront->blocks[(x*16+0)*128+y].style() < S_TRANSLUCENT)
-                    drawFront(here[0],cfront->blocks[(x*16+0)*128+y],x,y,15);
-            } else {
-                drawFront(here[0],sky,x,y,15);
-            }
-        } else if (here[128].style() < S_TRANSLUCENT) {
-            drawFront(here[0],here[128],x,y,z);
-        }
-        if (z == 0) {
-            if (cback) { 
-                if (cback->blocks[(x*16+15)*128+y].style() < S_TRANSLUCENT)
-                    drawBack(here[0],cback->blocks[(x*16+15)*128+y],x,y,-1);
-            } else {
-                drawBack(here[0],sky,x,y,-1);
-            }
-        } else if (here[-128].style() < S_TRANSLUCENT) {
-            drawBack(here[0],here[-128],x,y,z-1);
+        switch (here[0].style()) {
+            case S_BLOCK:
+                if (y == 127) {
+                    if (ctop) {
+                        if (ctop->blocks[(x*16+z)*128+0].opacity() < S_TRANSLUCENT)
+                            drawTop(here[0],ctop->blocks[(x*16+z)*128+0],x,127,z);
+                    } else {
+                        drawTop(here[0],sky,x,127,z);
+                    }
+                } else if (here[1].opacity() < S_TRANSLUCENT) {
+                    drawTop(here[0],here[1],x,y,z);
+                }
+                if (y == 0) {
+                    if (cbottom) {
+                        if (cbottom->blocks[(x*16+z)*128+127].opacity() < S_TRANSLUCENT) 
+                            drawBottom(here[0],cbottom->blocks[(x*16+z)*128+127],x,-1,z);
+                    } else {
+                        drawBottom(here[0],sky,x,-1,z);
+                    }
+                } else if (here[-1].opacity() < S_TRANSLUCENT) {
+                    drawBottom(here[0],here[-1],x,y-1,z);
+                }
+                if (x == 15) {
+                    if (cright) {
+                        if (cright->blocks[(0*16+z)*128+y].opacity() < S_TRANSLUCENT)
+                            drawRight(here[0],cright->blocks[(0*16+z)*128+y],15,y,z);
+                    } else {
+                        drawRight(here[0],sky,15,y,z);
+                    }
+                } else if (here[128*16].opacity() < S_TRANSLUCENT) {
+                    drawRight(here[0],here[128*16],x,y,z);
+                }
+                if (x == 0) {
+                    if (cleft) { 
+                        if (cleft->blocks[(15*16+z)*128+y].opacity() < S_TRANSLUCENT)
+                            drawLeft(here[0],cleft->blocks[(15*16+z)*128+y],-1,y,z);
+                    } else {
+                        drawLeft(here[0],sky,-1,y,z);
+                    }
+                } else if (here[-128*16].opacity() < S_TRANSLUCENT) {
+                    drawLeft(here[0],here[-128*16],x-1,y,z);
+                }
+                if (z == 15) {
+                    if (cfront) {
+                        if (cfront->blocks[(x*16+0)*128+y].opacity() < S_TRANSLUCENT)
+                            drawFront(here[0],cfront->blocks[(x*16+0)*128+y],x,y,15);
+                    } else {
+                        drawFront(here[0],sky,x,y,15);
+                    }
+                } else if (here[128].opacity() < S_TRANSLUCENT) {
+                    drawFront(here[0],here[128],x,y,z);
+                }
+                if (z == 0) {
+                    if (cback) { 
+                        if (cback->blocks[(x*16+15)*128+y].opacity() < S_TRANSLUCENT)
+                            drawBack(here[0],cback->blocks[(x*16+15)*128+y],x,y,-1);
+                    } else {
+                        drawBack(here[0],sky,x,y,-1);
+                    }
+                } else if (here[-128].opacity() < S_TRANSLUCENT) {
+                    drawBack(here[0],here[-128],x,y,z-1);
+                }
+                break;
+            case S_DECORATION:
+                drawDecoration(here[0],x,y,z);
+                break;
+            case S_SPECIAL:
+                //doors and torches and levers and such
+                break;
         }
     }
     glEnd();
@@ -421,12 +460,12 @@ void renderWorld(Client *client) {
 
     int time = SDL_GetTicks();
     
-    std::map<ChunkPos,Chunk*,Back2Front> visible(Back2Front(cx+0.1,cy+0.1,cz+0.1));
-    std::map<ChunkPos,Block*,Back2Front> translucent(Back2Front(px,py,pz));
+    std::map<Pos3D,Chunk*,Back2Front> visible(Back2Front(cx+0.1,cy+0.1,cz+0.1));
+    std::map<Pos3D,Block*,Back2Front> translucent(Back2Front(px,py,pz));
     
     client->world.lock();
-    std::map<ChunkPos,Chunk*>::iterator ci = client->world.chunks.begin();
-    std::map<ChunkPos,Chunk*>::iterator end = client->world.chunks.end();
+    std::map<Pos3D,Chunk*>::iterator ci = client->world.chunks.begin();
+    std::map<Pos3D,Chunk*>::iterator end = client->world.chunks.end();
     for ( ; ci != end; ci++) {
         cx = ci->first.cx;
         cy = ci->first.cy;
@@ -440,7 +479,7 @@ void renderWorld(Client *client) {
         //only render IF the chunk center is less than 40 blocks from us or in the 180 degree FOV in front of us
         if (len < 40 || abs(angle) <= 90.0/180.0*3.14159) {
             Chunk *chunk = ci->second;
-            visible[ChunkPos(cx,cy,cz)] = chunk;
+            visible[Pos3D(cx,cy,cz)] = chunk;
             if (len < 16 || chunk->boundarydirty || chunk->dirty || !chunk->haslist) {
                 chunk->boundarydirty = false;
                 Chunk *ctop = client->world.getChunkIdx(cx,cy+1,cz),
@@ -474,8 +513,8 @@ void renderWorld(Client *client) {
             glCallList(chunk->list);
         }
     }
-    std::map<ChunkPos,Chunk*,Back2Front>::iterator vi = visible.begin();
-    std::map<ChunkPos,Chunk*,Back2Front>::iterator vend = visible.end();
+    std::map<Pos3D,Chunk*,Back2Front>::iterator vi = visible.begin();
+    std::map<Pos3D,Chunk*,Back2Front>::iterator vend = visible.end();
     for ( ; vi != vend; vi++) {
         glCallList(vi->second->list+1);
     }

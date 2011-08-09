@@ -273,7 +273,7 @@ int main(int argc, char** argv) {
     initRender();
     Client *c = new Client();
     if (c->connect((char*)"localhost")) {
-        if (c->login((char*)"Jason2gs")) {
+        if (c->login((char*)"YourMom")) {
             while (c->running()) {
                 SDL_Delay(10);
                 renderWorld(c);

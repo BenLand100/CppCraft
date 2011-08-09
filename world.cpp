@@ -3,11 +3,29 @@
 #include "zlib.h"
 #include "render.h"
 
+//decorations and specials must be translucent as well
+int Block::opacity() {
+    switch (type) {
+        case 0: return S_AIR;
+        case 31: case 32: case 37: case 38: 
+        case 9: case 18: case 20: return S_TRANSLUCENT;
+        default: return S_OPAQUE;
+    }
+}
+
 
 int Block::style() {
     switch (type) {
-        case 0: return S_AIR;
-        case 9: case 18: return S_TRANSLUCENT;
+        case 31: case 32: case 37: case 38: return S_DECORATION;
+        default: return S_BLOCK;
+    }
+}
+
+int Block::passable() {
+    switch (type) {
+        case 0:
+        case 31: case 32: case 37: case 38: return S_PASSABLE;
+        case 9: return S_FLUID;
         default: return S_SOLID;
     }
 }
@@ -127,8 +145,15 @@ bool World::containsSolid(int sx,int sy,int sz,int ex,int ey,int ez) {
                 }
                 if (!c) continue;
                 localPos(x,y,z,lx,ly,lz);
-                if (c->getBlock(lx,ly,lz)->type) { //SHOULD CHECK SOLIDITY
-                    return true;
+                switch (c->getBlock(lx,ly,lz)->passable()) {
+                    case S_PASSABLE:
+                        break;
+                    case S_FLUID:
+                        break;
+                    case S_CALCULATE:
+                        return true;
+                    case S_SOLID:
+                        return true;
                 }
             }
         }
@@ -151,7 +176,7 @@ Chunk* World::getChunk(int x, int y, int z) {
 
 Chunk* World::getChunkIdx(int cx, int cy, int cz) {
     lock();
-    std::map<ChunkPos,Chunk*>::iterator ci = chunks.find(ChunkPos(cx,cy,cz));
+    std::map<Pos3D,Chunk*>::iterator ci = chunks.find(Pos3D(cx,cy,cz));
     Chunk *c = NULL;
     if (ci != chunks.end()) {
         c = ci->second;
@@ -173,7 +198,7 @@ bool World::updateChunk(int x, int y, int z, int sx, int sy, int sz, int size, c
         chunkPos(x,y,z,cx,cy,cz);
         //std::cout << "Creating Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ") " << chunks.size() << '\n';
         c = new Chunk();
-        chunks[ChunkPos(cx,cy,cz)] = c;
+        chunks[Pos3D(cx,cy,cz)] = c;
         unlock();
     }
     int lx,ly,lz;
@@ -190,7 +215,7 @@ bool World::updateChunk(int cx, int cy, int cz, int size, short *locs, char *typ
 
 bool World::deleteChunk(int cx, int cy, int cz) {
     lock();
-    std::map<ChunkPos,Chunk*>::iterator ci = chunks.find(ChunkPos(cx,cy,cz));
+    std::map<Pos3D,Chunk*>::iterator ci = chunks.find(Pos3D(cx,cy,cz));
     if (ci == chunks.end()) return false;
     //std::cout << "Deleting Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ")\n";
     delete ci->second;
@@ -201,8 +226,8 @@ bool World::deleteChunk(int cx, int cy, int cz) {
 
 void World::clearChunks() {
     lock();
-    std::map<ChunkPos,Chunk*>::iterator ci = chunks.begin();
-    std::map<ChunkPos,Chunk*>::iterator end = chunks.end();
+    std::map<Pos3D,Chunk*>::iterator ci = chunks.begin();
+    std::map<Pos3D,Chunk*>::iterator end = chunks.end();
     int i = 0;
     for ( ; ci != end; ci++, i++) {
         delete ci->second;

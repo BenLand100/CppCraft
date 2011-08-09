@@ -47,25 +47,33 @@ inline void blockPos(double x, double y, double z, int &bx, int &by, int &bz) {
     bz = (int)z;
 }
 
-class ChunkPos {
+class Pos3D {
     public:
         int cx,cy,cz;
-        inline ChunkPos(int _cx, int _cy, int _cz) : cx(_cx), cy(_cy), cz(_cz) { }
-        inline bool operator<(const ChunkPos &pos) const {
+        inline Pos3D(int _cx, int _cy, int _cz) : cx(_cx), cy(_cy), cz(_cz) { }
+        inline bool operator<(const Pos3D &pos) const {
             //damn strict weak ordering
             if (cx != pos.cx) return (cx < pos.cx);
             if (cz != pos.cz) return (cz < pos.cz);
             return (cy < pos.cy);
         }
-        inline bool operator==(const ChunkPos &pos) const {
+        inline bool operator==(const Pos3D &pos) const {
             return (pos.cx == cx) && (pos.cz == cz) && (pos.cy == cy);
         }
 };
 
 #define S_AIR           0
-#define S_DYNAMIC       1
-#define S_TRANSLUCENT   2
-#define S_SOLID         3
+#define S_TRANSLUCENT   1
+#define S_OPAQUE        2
+
+#define S_BLOCK         3
+#define S_DECORATION    4
+#define S_SPECIAL       5
+
+#define S_PASSABLE      6
+#define S_FLUID         7
+#define S_SOLID         8
+#define S_CALCULATE     9
 
 class Block {
     public:
@@ -73,7 +81,9 @@ class Block {
         inline ~Block() { }
         
         //see defines above
+        int opacity();
         int style();
+        int passable();
         
         int type;
         char meta,light,sky;
@@ -102,8 +112,8 @@ class Chunk {
         bool destroy,dirty,boundarydirty,haslist;
         int list;
 
-    friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<ChunkPos,Block*,Back2Front> &translucent);
-    friend void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<ChunkPos,Block*,Back2Front> &translucent);
+    friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<Pos3D,Block*,Back2Front> &translucent);
+    friend void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<Pos3D,Block*,Back2Front> &translucent);
     friend void renderWorld(Client *client);
     friend void disposeChunk(Chunk *chunk);
 };
@@ -131,7 +141,7 @@ class World {
         
         
     private:
-        std::map<ChunkPos,Chunk*> chunks;
+        std::map<Pos3D,Chunk*> chunks;
         SDL_mutex *chunklock;
         
     friend void renderWorld(Client *client);
