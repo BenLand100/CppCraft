@@ -246,14 +246,14 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
                             if (cbottom) {
                                 drawBottom(col[0],cbottom->blocks[(x*16+z)*128+127],x,-1,z);
                             } else {
-                                //drawBottom(col[0],sky,x,-1,z);
+                                drawBottom(col[0],sky,x,-1,z);
                             }
                         }
                         if (y == 127) {
                             if (ctop) {
                                 drawTop(col[127],ctop->blocks[(x*16+z)*128+0],x,127,z);
                             } else {
-                                //drawTop(col[127],sky,x,127,z);
+                                drawTop(col[127],sky,x,127,z);
                             }
                         } else if (col[y+1].style() != S_SOLID) {
                             drawTop(col[y],col[y+1],x,y,z);
@@ -263,14 +263,14 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
                             if (cleft) {
                                 drawLeft(col[y],cleft->blocks[(15*16+z)*128+y],-1,y,z);
                             } else {
-                                //drawLeft(col[y],sky,-1,y,z);
+                                drawLeft(col[y],sky,-1,y,z);
                             }
                         }
                         if (x == 15) {
                             if (cright) {
                                 drawRight(col[y],cright->blocks[(0*16+z)*128+y],15,y,z);
                             } else {
-                                //drawRight(col[y],sky,15,y,z);
+                                drawRight(col[y],sky,15,y,z);
                             }
                         } else if (nslicecol[y].style() != S_SOLID) {
                             drawRight(col[y],nslicecol[y],x,y,z);
@@ -280,14 +280,14 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
                             if (cback) {
                                 drawBack(col[y],cback->blocks[(x*16+15)*128+y],x,y,-1);
                             } else {
-                                //drawBack(col[y],sky,x,y,-1);
+                                drawBack(col[y],sky,x,y,-1);
                             }
                         }
                         if (z == 15) {
                             if (cfront) {
                                 drawFront(col[y],cfront->blocks[(x*16+0)*128+y],x,y,15);
                             } else {
-                                //drawFront(col[y],sky,x,y,15);
+                                drawFront(col[y],sky,x,y,15);
                             }
                         } else if (ncol[y].style() != S_SOLID) {
                             drawFront(col[y],ncol[y],x,y,z);
@@ -441,7 +441,22 @@ void renderWorld(Client *client) {
         if (len < 40 || abs(angle) <= 90.0/180.0*3.14159) {
             Chunk *chunk = ci->second;
             visible[ChunkPos(cx,cy,cz)] = chunk;
-            if (len < 30 || chunk->dirty || !chunk->haslist) {
+            if (len < 16 || chunk->boundarydirty || chunk->dirty || !chunk->haslist) {
+                chunk->boundarydirty = false;
+                Chunk *ctop = client->world.getChunkIdx(cx,cy+1,cz),
+                      *cbottom = client->world.getChunkIdx(cx,cy-1,cz),
+                      *cright = client->world.getChunkIdx(cx+1,cy,cz),
+                      *cleft = client->world.getChunkIdx(cx-1,cy,cz),
+                      *cfront = client->world.getChunkIdx(cx,cy,cz+1),
+                      *cback = client->world.getChunkIdx(cx,cy,cz-1);
+                if (chunk->dirty) {
+                    if (ctop) ctop->markBoundaryDirty();
+                    if (cbottom) cbottom->markBoundaryDirty();
+                    if (cright) cright->markBoundaryDirty();
+                    if (cleft) cleft->markBoundaryDirty();
+                    if (cfront) cfront->markBoundaryDirty();
+                    if (cback) cback->markBoundaryDirty();
+                }
                 chunk->dirty = false;
                 if (!chunk->haslist) {
                     chunk->haslist = true;
@@ -449,24 +464,10 @@ void renderWorld(Client *client) {
                     num++;
                 }
                 glNewList(chunk->list, GL_COMPILE);
-                drawStaticChunk(chunk,cx,cy,cz,
-                    client->world.getChunkIdx(cx,cy+1,cz),
-                    client->world.getChunkIdx(cx,cy-1,cz),
-                    client->world.getChunkIdx(cx+1,cy,cz),
-                    client->world.getChunkIdx(cx-1,cy,cz),
-                    client->world.getChunkIdx(cx,cy,cz+1),
-                    client->world.getChunkIdx(cx,cy,cz-1),
-                    translucent);
+                drawStaticChunk(chunk,cx,cy,cz,ctop,cbottom,cright,cleft,cfront,cback,translucent);
                 glEndList();
                 glNewList(chunk->list+1, GL_COMPILE);
-                drawTranslucentChunk(chunk,cx,cy,cz,
-                    client->world.getChunkIdx(cx,cy+1,cz),
-                    client->world.getChunkIdx(cx,cy-1,cz),
-                    client->world.getChunkIdx(cx+1,cy,cz),
-                    client->world.getChunkIdx(cx-1,cy,cz),
-                    client->world.getChunkIdx(cx,cy,cz+1),
-                    client->world.getChunkIdx(cx,cy,cz-1),
-                    translucent);
+                drawTranslucentChunk(chunk,cx,cy,cz,ctop,cbottom,cright,cleft,cfront,cback,translucent);
                 glEndList();
                 translucent.clear();
             }

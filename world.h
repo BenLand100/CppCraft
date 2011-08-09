@@ -90,6 +90,7 @@ class Chunk {
         bool update(int lx, int ly, int lz, int sx, int sy, int sz, int size, char *cdata);
         bool update(int size, short *locs, char *types, char *metas);
         void markDirty();
+        void markBoundaryDirty();
         
         inline Block* getBlock(int lx, int ly, int lz) {
             return &blocks[(lx*16+lz)*128+ly];
@@ -98,7 +99,7 @@ class Chunk {
     private:
         Block blocks[16*16*128]; //packed [X][Z][Y] for speed...
         
-        bool destroy,dirty,haslist;
+        bool destroy,dirty,boundarydirty,haslist;
         int list;
 
     friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<ChunkPos,Block*,Back2Front> &translucent);

@@ -12,7 +12,7 @@ int Block::style() {
     }
 }
 
-Chunk::Chunk() : dirty(true), haslist(false) {
+Chunk::Chunk() : dirty(true),boundarydirty(false), haslist(false) {
 }
 
 Chunk::~Chunk() {
@@ -21,6 +21,10 @@ Chunk::~Chunk() {
 
 void Chunk::markDirty() {
     dirty = true;
+}
+
+void Chunk::markBoundaryDirty() {
+    boundarydirty = true;
 }
 
 bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, char *cdata) {
