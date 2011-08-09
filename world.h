@@ -102,7 +102,7 @@ class Chunk {
         int list;
 
     friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<ChunkPos,Block*,Back2Front> &translucent);
-    friend void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, std::map<ChunkPos,Block*,Back2Front> &translucent);
+    friend void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<ChunkPos,Block*,Back2Front> &translucent);
     friend void renderWorld(Client *client);
     friend void disposeChunk(Chunk *chunk);
 };
@@ -114,6 +114,7 @@ class World {
         
         Block* getBlock(int x, int y, int z); //get block if it exists (if many are needed, use getChunk, it's faster)
         Chunk* getChunk(int x, int y, int z); //get chunk containing block if it exists
+        Chunk* getChunkIdx(int cx, int cy, int cz); //get chunk by the chunk's coordinates
         
         void clearChunks();
         

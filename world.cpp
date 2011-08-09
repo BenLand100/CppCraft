@@ -142,7 +142,10 @@ Block* World::getBlock(int x, int y, int z) {
 Chunk* World::getChunk(int x, int y, int z) {
     int cx,cy,cz;
     chunkPos(x,y,z,cx,cy,cz);
-    //std::cout << "GetChunk (" << std::dec << x << ' ' << y << ' ' << z << ") => (" << cx << ' ' << cy << ' ' << cz << ")\n";
+    return getChunkIdx(cx,cy,cz);
+}
+
+Chunk* World::getChunkIdx(int cx, int cy, int cz) {
     lock();
     std::map<ChunkPos,Chunk*>::iterator ci = chunks.find(ChunkPos(cx,cy,cz));
     Chunk *c = NULL;
