@@ -8,7 +8,7 @@ int Block::opacity() {
     switch (type) {
         case 0: return S_AIR;
         case 31: case 32: case 37: case 38: 
-        case 9: case 18: case 20: return S_TRANSLUCENT;
+        case 9: case 18: case 20: case 83: return S_TRANSLUCENT;
         default: return S_OPAQUE;
     }
 }
@@ -16,7 +16,7 @@ int Block::opacity() {
 
 int Block::style() {
     switch (type) {
-        case 31: case 32: case 37: case 38: return S_DECORATION;
+        case 31: case 32: case 37: case 38: case 83: return S_DECORATION;
         default: return S_BLOCK;
     }
 }
@@ -24,7 +24,7 @@ int Block::style() {
 int Block::passable() {
     switch (type) {
         case 0:
-        case 31: case 32: case 37: case 38: return S_PASSABLE;
+        case 31: case 32: case 37: case 38: case 83: return S_PASSABLE;
         case 9: return S_FLUID;
         default: return S_SOLID;
     }
@@ -122,13 +122,13 @@ World::~World() {
     SDL_DestroyMutex(chunklock);
 }
 
-void World::lock() {
-    //SDL_mutexP(chunklock);
+void World::lockChunks() {
+    SDL_mutexP(chunklock);
 }
 
 
-void World::unlock() {
-    //SDL_mutexV(chunklock);
+void World::unlockChunks() {
+    SDL_mutexV(chunklock);
 }
 
 bool World::containsSolid(int sx,int sy,int sz,int ex,int ey,int ez) {
@@ -175,13 +175,11 @@ Chunk* World::getChunk(int x, int y, int z) {
 }
 
 Chunk* World::getChunkIdx(int cx, int cy, int cz) {
-    lock();
     std::map<Pos3D,Chunk*>::iterator ci = chunks.find(Pos3D(cx,cy,cz));
     Chunk *c = NULL;
     if (ci != chunks.end()) {
         c = ci->second;
     }
-    unlock();
     return c;
 }
 
@@ -193,13 +191,13 @@ bool World::initChunk(int cx, int cy, int cz) {
 bool World::updateChunk(int x, int y, int z, int sx, int sy, int sz, int size, char *cdata) {
     Chunk *c = getChunk(x,y,z);
     if (!c) {
-        lock();
+        lockChunks();
         int cx,cy,cz;
         chunkPos(x,y,z,cx,cy,cz);
         //std::cout << "Creating Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ") " << chunks.size() << '\n';
         c = new Chunk();
         chunks[Pos3D(cx,cy,cz)] = c;
-        unlock();
+        unlockChunks();
     }
     int lx,ly,lz;
     localPos(x,y,z,lx,ly,lz);
@@ -214,18 +212,21 @@ bool World::updateChunk(int cx, int cy, int cz, int size, short *locs, char *typ
 }
 
 bool World::deleteChunk(int cx, int cy, int cz) {
-    lock();
+    lockChunks();
     std::map<Pos3D,Chunk*>::iterator ci = chunks.find(Pos3D(cx,cy,cz));
-    if (ci == chunks.end()) return false;
+    if (ci == chunks.end()) {
+        unlockChunks();
+        return false;
+    }
     //std::cout << "Deleting Chunk (" << std::dec << cx << ',' << cy << ',' << cz << ")\n";
     delete ci->second;
     chunks.erase(ci);
-    unlock();
+    unlockChunks();
     return true;
 }
 
 void World::clearChunks() {
-    lock();
+    lockChunks();
     std::map<Pos3D,Chunk*>::iterator ci = chunks.begin();
     std::map<Pos3D,Chunk*>::iterator end = chunks.end();
     int i = 0;
@@ -233,6 +234,6 @@ void World::clearChunks() {
         delete ci->second;
     }
     chunks.clear();
-    unlock();
+    unlockChunks();
 }
 

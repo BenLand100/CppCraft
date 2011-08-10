@@ -121,6 +121,8 @@ inline void setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
         case 37: tx = 13; ty = 0; break;
         case 38: tx = 12; ty = 0; break;
             
+        case 83: tx = 9; ty = 4; break;
+        
         default:
             tx = 0; ty = 0; g = 0.0f; b = 0.0f;
             
@@ -456,20 +458,18 @@ void renderWorld(Client *client) {
     double pz = client->us->z;
     glTranslatef(-px, -py, -pz); 
 
-    int cx,cy,cz; chunkPos(px,py,pz,cx,cy,cz);
-
     int time = SDL_GetTicks();
     
-    std::map<Pos3D,Chunk*,Back2Front> visible(Back2Front(cx+0.1,cy+0.1,cz+0.1));
+    std::map<Pos3D,Chunk*,Back2Front> visible(Back2Front(px/16.0-0.5,py/128.0-0.5,pz/16.0-0.5));
     std::map<Pos3D,Block*,Back2Front> translucent(Back2Front(px,py,pz));
     
-    client->world.lock();
+    client->world.lockChunks();
     std::map<Pos3D,Chunk*>::iterator ci = client->world.chunks.begin();
     std::map<Pos3D,Chunk*>::iterator end = client->world.chunks.end();
     for ( ; ci != end; ci++) {
-        cx = ci->first.cx;
-        cy = ci->first.cy;
-        cz = ci->first.cz;
+        int cx = ci->first.cx;
+        int cy = ci->first.cy;
+        int cz = ci->first.cz;
         int wx,wy,wz;
         worldPos(cx,cy,cz,wx,wy,wz);
         wx += 8 - px;
@@ -518,7 +518,7 @@ void renderWorld(Client *client) {
     for ( ; vi != vend; vi++) {
         glCallList(vi->second->list+1);
     }
-    client->world.unlock();
+    client->world.unlockChunks();
     time = SDL_GetTicks()-time;
 
     glFlush(); 
