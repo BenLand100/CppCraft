@@ -58,8 +58,9 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
     strm.avail_in = size;
     strm.next_in = (unsigned char*) cdata;
     
-    sx++; sy++; sz++; //why? minecraft. 
-    int len = sz*sy*sz*5/2;
+    sx++; sy++; sz++; 
+    int nibblelen = sx*sy*sz/2;
+    int len = nibblelen*5;
     unsigned char *data = new unsigned char[len];
     
     strm.avail_out = len;
@@ -73,15 +74,15 @@ bool Chunk::update(int lx, int ly, int lz, int sx, int sy, int sz, int size, cha
     
     //yea, they sub-byte-packed shit, cause THAT compresses well -.-
     unsigned char *types = data;
-    unsigned char *metas = &data[sx*sy*sz];
-    unsigned char *lights = &data[sx*sy*sz*3/2];
-    unsigned char *skys = &data[sx*sy*sz*4/2];
+    unsigned char *metas = &data[nibblelen*2];
+    unsigned char *lights = &data[nibblelen*3];
+    unsigned char *skys = &data[nibblelen*4];
     int i = 0;
-    for (int x = lx; x < lx+sx; x++) {
+    for (int x = lx; x < sx+lx; x++) {
         Block *slice = &blocks[x*16*128];
-        for (int z = lz; z < lz+sz; z++) {
+        for (int z = lz; z < sz+lz; z++) {
             Block *col = &slice[z*128];
-            for (int y = ly; y < ly+sy; y++) {
+            for (int y = ly; y < sy+ly; y++) {
                 col[y].type = *(types++);
                 if (i&1) {
                     col[y].meta = (*(metas++) >> 4) & 0xF;
