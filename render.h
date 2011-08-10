@@ -2,6 +2,7 @@
 #define _render
 
 #include "client.h"
+#include <map>
 
 class Back2Front {
     public:
@@ -11,6 +12,12 @@ class Back2Front {
         return ((a.cx-px)*(a.cx-px)+(a.cy-py)*(a.cy-py)+(a.cz-pz)*(a.cz-pz)) >= ((b.cx-px)*(b.cx-px)+(b.cy-py)*(b.cy-py)+(b.cz-pz)*(b.cz-pz));
     }
 };
+
+typedef struct {
+    bool haslist;
+    int list;
+    std::map<Pos3D,Block*,Back2Front> *translucent;
+} RenderData;
 
 bool initRender();
 void renderWorld(Client *client);

@@ -109,8 +109,10 @@ class Chunk {
     private:
         Block blocks[16*16*128]; //packed [X][Z][Y] for speed...
         
-        bool destroy,dirty,boundarydirty,haslist;
-        int list;
+        bool dirty,boundarydirty;
+        void *renderdata;
+        
+        void (*destroy)(Chunk *us);
 
     friend void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<Pos3D,Block*,Back2Front> &translucent);
     friend void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, Chunk *cbottom, Chunk *cright, Chunk *cleft, Chunk *cfront, Chunk *cback, std::map<Pos3D,Block*,Back2Front> &translucent);

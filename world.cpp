@@ -30,11 +30,11 @@ int Block::passable() {
     }
 }
 
-Chunk::Chunk() : dirty(true),boundarydirty(false), haslist(false) {
+Chunk::Chunk() : dirty(true),boundarydirty(false), renderdata(NULL), destroy(NULL) {
 }
 
 Chunk::~Chunk() {
-    disposeChunk(this);
+    if (destroy) destroy(this);
 }
 
 void Chunk::markDirty() {

@@ -427,20 +427,22 @@ inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ct
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
 
-SDL_mutex *listlock = SDL_CreateMutex();
-std::vector<int> lists;
+SDL_mutex *deaddatalock = SDL_CreateMutex();
+std::vector<RenderData*> deaddata;
 int times = 0;
 int num = 0;
 
 void renderWorld(Client *client) {
 
-    SDL_mutexP(listlock);
-    while (!lists.empty()) {
-        //std::cout << "Freeing display list (" << std::dec << num-- << ") " << lists.back() << '\n';
-        glDeleteLists(lists.back(), 2);
-        lists.pop_back();
+    SDL_mutexP(deaddatalock);
+    while (!deaddata.empty()) {
+        RenderData *old = deaddata.back();
+        if (old->haslist) glDeleteLists(old->list, 2);
+        if (old->translucent) delete old->translucent;
+        delete old;
+        deaddata.pop_back();
     }
-    SDL_mutexV(listlock);
+    SDL_mutexV(deaddatalock);
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -477,17 +479,26 @@ void renderWorld(Client *client) {
         double len  = sqrt(wx*wx+wz*wz);
         double angle = acos((wx*fx+wz*fz)/len);
         //only render IF the chunk center is less than 40 blocks from us or in the 180 degree FOV in front of us
-        if (len < 40 || abs(angle) <= 90.0/180.0*3.14159) {
+        if (len < 20 || abs(angle) <= 90.0/180.0*3.14159) {
             Chunk *chunk = ci->second;
             visible[Pos3D(cx,cy,cz)] = chunk;
-            if (len < 16 || chunk->boundarydirty || chunk->dirty || !chunk->haslist) {
+            Chunk *ctop = client->world.getChunkIdx(cx,cy+1,cz),
+                  *cbottom = client->world.getChunkIdx(cx,cy-1,cz),
+                  *cright = client->world.getChunkIdx(cx+1,cy,cz),
+                  *cleft = client->world.getChunkIdx(cx-1,cy,cz),
+                  *cfront = client->world.getChunkIdx(cx,cy,cz+1),
+                  *cback = client->world.getChunkIdx(cx,cy,cz-1);
+            RenderData *data = (RenderData*)chunk->renderdata;
+            if (!data) {
+                chunk->destroy = &disposeChunk;
+                chunk->renderdata = data = new RenderData;
+                data->haslist = true;
+                data->list = glGenLists(2);
+                data->translucent = new std::map<Pos3D,Block*,Back2Front>(Back2Front(px,py,pz));
+                num++;
+            }
+            if (chunk->boundarydirty || chunk->dirty || !chunk->renderdata) {
                 chunk->boundarydirty = false;
-                Chunk *ctop = client->world.getChunkIdx(cx,cy+1,cz),
-                      *cbottom = client->world.getChunkIdx(cx,cy-1,cz),
-                      *cright = client->world.getChunkIdx(cx+1,cy,cz),
-                      *cleft = client->world.getChunkIdx(cx-1,cy,cz),
-                      *cfront = client->world.getChunkIdx(cx,cy,cz+1),
-                      *cback = client->world.getChunkIdx(cx,cy,cz-1);
                 if (chunk->dirty) {
                     if (ctop) ctop->markBoundaryDirty();
                     if (cbottom) cbottom->markBoundaryDirty();
@@ -497,26 +508,28 @@ void renderWorld(Client *client) {
                     if (cback) cback->markBoundaryDirty();
                 }
                 chunk->dirty = false;
-                if (!chunk->haslist) {
-                    chunk->haslist = true;
-                    chunk->list = glGenLists(2);
-                    num++;
-                }
-                glNewList(chunk->list, GL_COMPILE);
-                drawStaticChunk(chunk,cx,cy,cz,ctop,cbottom,cright,cleft,cfront,cback,translucent);
+                data->translucent->clear();
+                glNewList(data->list, GL_COMPILE);
+                drawStaticChunk(chunk,cx,cy,cz,ctop,cbottom,cright,cleft,cfront,cback,*data->translucent);
                 glEndList();
-                glNewList(chunk->list+1, GL_COMPILE);
-                drawTranslucentChunk(chunk,cx,cy,cz,ctop,cbottom,cright,cleft,cfront,cback,translucent);
+                glNewList(data->list+1, GL_COMPILE);
+                drawTranslucentChunk(chunk,cx,cy,cz,ctop,cbottom,cright,cleft,cfront,cback,*data->translucent);
                 glEndList();
-                translucent.clear();
+            } else if (len < 20) {
+                std::map<Pos3D,Block*,Back2Front> *sorted = new std::map<Pos3D,Block*,Back2Front>(data->translucent->begin(),data->translucent->end(),Back2Front(px,py,pz));
+                delete data->translucent;
+                data->translucent = sorted;
+                glNewList(data->list+1, GL_COMPILE);
+                drawTranslucentChunk(chunk,cx,cy,cz,ctop,cbottom,cright,cleft,cfront,cback,*data->translucent);
+                glEndList();
             }
-            glCallList(chunk->list);
+            glCallList(data->list);
         }
     }
     std::map<Pos3D,Chunk*,Back2Front>::iterator vi = visible.begin();
     std::map<Pos3D,Chunk*,Back2Front>::iterator vend = visible.end();
     for ( ; vi != vend; vi++) {
-        glCallList(vi->second->list+1);
+        glCallList(((RenderData*)vi->second->renderdata)->list+1);
     }
     client->world.unlockChunks();
     time = SDL_GetTicks()-time;
@@ -528,11 +541,9 @@ void renderWorld(Client *client) {
 }
 
 void disposeChunk(Chunk *chunk) {
-    if (chunk->haslist) {
-        SDL_mutexP(listlock);
-        lists.push_back(chunk->list);
-        SDL_mutexV(listlock);
-    }
+    SDL_mutexP(deaddatalock);
+    if (chunk->renderdata) deaddata.push_back((RenderData*)chunk->renderdata);
+    SDL_mutexV(deaddatalock);
 }
 
 bool capture_mouse = true;
