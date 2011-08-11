@@ -61,8 +61,8 @@ bool initRender() {
         fprintf(stderr, "Unable to create openGL scene %s", SDL_GetError());
         return false;
     }
-    //SDL_WM_GrabInput(SDL_GRAB_ON);
-    //SDL_ShowCursor(SDL_DISABLE);
+    SDL_WM_GrabInput(SDL_GRAB_ON);
+    SDL_ShowCursor(SDL_DISABLE);
     initGL(w_width, w_height);
     return true;
 }
@@ -427,6 +427,53 @@ inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ct
     glTranslatef((float)-tx,(float)-ty,(float)-tz);
 }
 
+void renderHUD(Client *client) { 
+
+    //find and project --- world will provide the projection from out position and look
+    //draw bounding box before we fuck with the matrices or draw the hud
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    int vPort[4];
+    glGetIntegerv(GL_VIEWPORT, vPort);
+    glOrtho(0.0f, (float)vPort[2], 0.0f, (float)vPort[3], -1.0f, 1.0f);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glTranslatef(vPort[2]/2.0,vPort[3]/2.0,0);
+    glScalef(vPort[2]/2.0,vPort[2]/2.0,0);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    float withHUD[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, withHUD);
+    glColor4f(0.0,0.0,0.0,0.0);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    
+    //Draw Crosshairs
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_COLOR);
+    glColor4f(1.0,1.0,1.0,0.4);
+    glBegin(GL_QUADS);
+    glVertex2f(-0.03, -0.003); glVertex2f(0.03, -0.003); glVertex2f(0.03, 0.003); glVertex2f(-0.03, 0.003);
+    glVertex2f(-0.003, -0.03); glVertex2f(0.003, -0.03); glVertex2f(0.003, 0.03); glVertex2f(-0.003, 0.03);
+    glEnd();
+    
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //Draw the inventory, etc
+    
+    
+    glColor4f(0.0,0.0,0.0,1.0);
+    glColorMaterial(GL_FRONT, GL_EMISSION);
+    glColor4f(0.0,0.0,0.0,1.0);
+    float withoutHUD[4] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, withoutHUD);
+    glDisable(GL_BLEND);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();   
+}
+
 SDL_mutex *deaddatalock = SDL_CreateMutex();
 std::vector<RenderData*> deaddata;
 int times = 0;
@@ -534,12 +581,13 @@ void renderWorld(Client *client) {
     client->world.unlockChunks();
     time = SDL_GetTicks()-time;
 
+    renderHUD(client);
+
     glFlush(); 
     SDL_GL_SwapBuffers();
     
     if (!(times++ % 30)) std::cout << "Rendered in " << std::dec << time << " ms (" << (float)time/visible.size() << " per chunk)\n";
 }
-
 void disposeChunk(Chunk *chunk) {
     SDL_mutexP(deaddatalock);
     if (chunk->renderdata) deaddata.push_back((RenderData*)chunk->renderdata);
