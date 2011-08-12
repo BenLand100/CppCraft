@@ -150,8 +150,8 @@ Block* World::projectToBlock(double px, double py, double pz, double pitch, doub
         double t = (cx-px)/fx;
         if (t > 0 && t <= tmin) {
             int tx = fx > 0 ? cx : cx-1;
-            int ty = (int)(py+fy*t);
-            int tz = (int)(pz+fz*t);
+            int ty = (int)floor(py+fy*t);
+            int tz = (int)floor(pz+fz*t);
             Block *b = getBlock(tx,ty,tz);
             if (b && b->type) {
                 tmin = t;
@@ -166,9 +166,9 @@ Block* World::projectToBlock(double px, double py, double pz, double pitch, doub
     for (int cy = sy; cy != ey; cy += iy) {
         double t = (cy-py)/fy;
         if (t > 0 && t <= tmin) {
-            int tx = (int)(px+fx*t-1);
+            int tx = (int)floor(px+fx*t);
             int ty = fy > 0 ? cy : cy-1;
-            int tz = (int)(pz+fz*t);
+            int tz = (int)floor(pz+fz*t);
             Block *b = getBlock(tx,ty,tz);
             if (b && b->type) {
                 tmin = t;
@@ -183,8 +183,8 @@ Block* World::projectToBlock(double px, double py, double pz, double pitch, doub
     for (int cz = sz; cz != ez; cz += iz) {
         double t = (cz-pz)/fz;
         if (t > 0 && t <= tmin) {
-            int tx = (int)(px+fx*t-1);
-            int ty = (int)(py+fy*t);
+            int tx = (int)floor(px+fx*t);
+            int ty = (int)floor(py+fy*t);
             int tz = fz > 0 ? cz : cz-1;
             Block *b = getBlock(tx,ty,tz);
             if (b && b->type) {

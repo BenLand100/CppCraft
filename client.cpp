@@ -65,10 +65,13 @@ int physics_thread(Client *client) {
                 if (client->beingdug != client->target) {
                     client->digStartTime = SDL_GetTicks();
                     client->beingdug = client->target;
-                    std::cout << "And weeeee....\n";
                     //TODO send the start digging packet
+                    send_player_digging(client->socket,0,client->targetx,client->targety,client->targetz,client->targetface);
                 } else {
-                    std::cout << "dig dig dig dig\n";
+                    if (SDL_GetTicks() - client->digStartTime >= 2500) {
+                        client->beingdug = NULL;
+                        send_player_digging(client->socket,2,client->targetx,client->targety,client->targetz,client->targetface);
+                    }
                     //TODO check to see if start time is long enough ago to consider it dug
                 }
             } else {
@@ -201,6 +204,7 @@ void Client::packet(p_generic *p) {
             {
                 p_block_change *change = (p_block_change*)p;
                 Block *b = world.getBlock(change->X,change->Y,change->Z);
+                std::cout << "Block update: " << b << '\n';
                 if (b) { //Ignore if the chunk is not currently loaded...?
                     b->type = change->Type;
                     b->meta = change->Metadata;
