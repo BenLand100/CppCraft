@@ -119,9 +119,9 @@ int physics_thread(Client *client) {
         if (client->us->vy != 0) {
             client->us->y += client->us->vy*dt;
             //position y at our feet or head relative to velocity
-            int y = floor(client->us->y + ((client->us->vy > 0) ? client->us->height : 0)); 
+            int y = floor(client->us->y + ((client->us->vy > 0) ? 1.74 : 0)); 
             if (client->world.containsSolid(sx,y,sz,ex,y,ez)) {
-                client->us->y = y + ((client->us->vy > 0) ? -client->us->height : 1) * 1.001; //adjust slightly above/below
+                client->us->y = y + ((client->us->vy > 0) ? -1.74 : 1) * 1.001; //adjust slightly above/below
                 if (client->us->vy < 0) client->onGround = true;
                 client->us->vy = 0;
             }

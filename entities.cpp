@@ -24,7 +24,7 @@ void Player::boundingBox(int &sx,int &sy,int &sz,int &ex,int &ey,int &ez) {
     sy = floor(y);
     sz = floor(z-apothem);
     ex = floor(x+apothem);
-    ey = floor(y+height);
+    ey = floor(y+1.74);
     ez = floor(z+apothem);
 }
 
