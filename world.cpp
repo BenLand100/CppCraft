@@ -230,6 +230,11 @@ bool World::containsSolid(int sx,int sy,int sz,int ex,int ey,int ez) {
     return false;
 }
 
+void World::updateLighting(int x, int y, int z) {
+    //TODO make the lighting update... will be tedious and the fomula is sort of unknown
+    Chunk *c = getChunk(x,y,z); if (c) c->markDirty();
+}
+
 Block* World::getBlock(int x, int y, int z) {
     int lx,ly,lz;
     Chunk *c = getChunk(x,y,z);

@@ -145,6 +145,8 @@ class World {
         bool updateChunk(int cx, int cy, int cz, int size, short *locs, char *types, char *metas); //position in chunk coords
         bool deleteChunk(int cx, int cy, int cz);
         
+        void updateLighting(int x, int y, int z);
+        
         void lockChunks();
         void unlockChunks();
         
