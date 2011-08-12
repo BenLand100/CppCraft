@@ -5,6 +5,8 @@
 #include <cmath>
 
 Client::Client() {
+    digging = false;
+    target = beingdug = NULL;
     forwards = sideways = 0;
     connected = false;
     socket = NULL;
@@ -57,6 +59,22 @@ int physics_thread(Client *client) {
         double dt = 0.05;
         
         client->lockUs();
+        client->retarget();
+        if (client->digging) {
+            if (client->target) {
+                if (client->beingdug != client->target) {
+                    client->digStartTime = SDL_GetTicks();
+                    client->beingdug = client->target;
+                    std::cout << "And weeeee....\n";
+                    //TODO send the start digging packet
+                } else {
+                    std::cout << "dig dig dig dig\n";
+                    //TODO check to see if start time is long enough ago to consider it dug
+                }
+            } else {
+                client->beingdug = NULL;
+            }
+        }
         
         if (client->forwards || client->sideways) {
             double fx = cos((client->us->yaw)/180.0*3.14159);
@@ -222,6 +240,24 @@ bool Client::login(char *username) {
     }
 }
 
+void Client::startDigging() {
+    lockUs();
+    beingdug = NULL;
+    digging = true;
+    unlockUs();
+}
+
+void Client::stopDigging() {
+    lockUs();
+    digging = false;
+    beingdug = NULL;
+    unlockUs();
+}
+
+void Client::placeHeld() {
+    //TODO formulate and send the block place packet
+    std::cout << "Place here...\n";
+}
 
 void Client::jump() {
     lockUs();
@@ -238,6 +274,7 @@ void Client::relLook(double dpitch, double dyaw) {
     if (us->pitch > 90.0) us->pitch = 90.0;
     if (us->pitch < -90.0) us->pitch = -90.0;
     if (us->yaw > 360.0 || us->yaw < 0) us->yaw = fmod(us->yaw,360.0);
+    retarget();
     unlockUs();
 }
 
@@ -248,12 +285,24 @@ void Client::setMotion(double forwards, double sideways) {
     unlockUs();
 }
 
+Block* Client::getTarget(int &x, int &y, int &z, int &face) {
+    x = targetx;
+    y = targety;
+    z = targetz;
+    face = targetface;
+    return target;
+}
+
 bool Client::running() {
     return connected;
 }
 
 void Client::sendPos() {
     send_player_position_and_look_cts(socket,us->x,us->y,us->height+us->y,us->z,us->yaw,us->pitch,onGround);
+}
+
+void Client::retarget() {
+    target = world.projectToBlock(us->x,us->y+us->height,us->z,us->pitch,us->yaw,targetx,targety,targetz,targetface);
 }
 
 void Client::init() {

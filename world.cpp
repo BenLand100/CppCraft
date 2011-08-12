@@ -139,15 +139,16 @@ void World::facingNormal(double pitch, double yaw, double &fx, double &fy, doubl
     fy = sin(-pitch/180.0*3.14159);
 }
 
-bool World::projectToBlock(double px, double py, double pz, double pitch, double yaw, int &x, int &y, int &z) {
+Block* World::projectToBlock(double px, double py, double pz, double pitch, double yaw, int &x, int &y, int &z, int &face) {
     double fx,fy,fz; facingNormal(pitch,yaw,fx,fy,fz);
     int sx = (int)px; int ix = fx < 0 ? -1 : 1, ex = sx + 4*ix;
     int sy = (int)py; int iy = fy < 0 ? -1 : 1, ey = sy + 4*iy;
     int sz = (int)pz; int iz = fz < 0 ? -1 : 1, ez = sz + 4*iz;
-    double tmin = 6*6*6; //hey, it's always going to be smaller than this
+    double tmin = 6.0; //max distance to consider
+    Block *res = NULL;
     for (int cx = sx; cx != ex; cx += ix) {
         double t = (cx-px)/fx;
-        if (t > 0 && t < tmin) {
+        if (t > 0 && t <= tmin) {
             int tx = fx > 0 ? cx : cx-1;
             int ty = (int)(py+fy*t);
             int tz = (int)(pz+fz*t);
@@ -157,12 +158,14 @@ bool World::projectToBlock(double px, double py, double pz, double pitch, double
                 x = tx;
                 y = ty;
                 z = tz;
+                face = fx > 0 ? F_MINUS_X : F_PLUS_X;
+                res = b;
             }
         }
     }
     for (int cy = sy; cy != ey; cy += iy) {
         double t = (cy-py)/fy;
-        if (t > 0 && t < tmin) {
+        if (t > 0 && t <= tmin) {
             int tx = (int)(px+fx*t-1);
             int ty = fy > 0 ? cy : cy-1;
             int tz = (int)(pz+fz*t);
@@ -172,12 +175,14 @@ bool World::projectToBlock(double px, double py, double pz, double pitch, double
                 x = tx;
                 y = ty;
                 z = tz;
+                face = fy > 0 ? F_MINUS_Y : F_PLUS_Y;
+                res = b;
             }
         }
     }
     for (int cz = sz; cz != ez; cz += iz) {
         double t = (cz-pz)/fz;
-        if (t > 0 && t < tmin) {
+        if (t > 0 && t <= tmin) {
             int tx = (int)(px+fx*t-1);
             int ty = (int)(py+fy*t);
             int tz = fz > 0 ? cz : cz-1;
@@ -187,10 +192,12 @@ bool World::projectToBlock(double px, double py, double pz, double pitch, double
                 x = tx;
                 y = ty;
                 z = tz;
+                face = fz > 0 ? F_MINUS_Z : F_PLUS_Z;
+                res = b;
             }
         }
     }
-    return tmin <= 6;
+    return res;
 }
 
 bool World::containsSolid(int sx,int sy,int sz,int ex,int ey,int ez) {

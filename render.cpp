@@ -67,7 +67,6 @@ bool initRender() {
     return true;
 }
 
-//Face {0,1,2,3,4,5,6} == {-y,+y,-z,+z,-x,+x,decor}
 //Result indicates static block if true (used in make display lists)
 inline void setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
     float r=1.0f,g=1.0f,b=1.0f;
@@ -76,8 +75,8 @@ inline void setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
             tx = 1; ty = 0; break;
         case 2:
             switch (face) {
-                case 0: tx = 2; ty = 0; break;
-                case 1: tx = 0; ty = 0; r = 0.0f; b = 0.0f; break;
+                case F_MINUS_Y: tx = 2; ty = 0; break;
+                case F_PLUS_Y: tx = 0; ty = 0; r = 0.0f; b = 0.0f; break;
                 default: tx = 3; ty = 0; break;
             }
             break;
@@ -94,7 +93,7 @@ inline void setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
             
         case 17:
             switch (face) {
-                case 0: case 1: tx = 5; ty = 1; break;
+                case F_MINUS_Y: case F_PLUS_Y: tx = 5; ty = 1; break;
                 default: 
                     switch (block.meta) {
                         case 0: tx = 4; ty = 1; break;
@@ -129,9 +128,9 @@ inline void setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
     }
     float f = intensity[l.sky+l.light < 16 ? l.sky+l.light : 15];
     switch (face) {
-        case 2: case 3:
+        case F_PLUS_Z: case F_MINUS_Z:
             f *= 0.8; break;
-        case 4: case 5:
+        case F_PLUS_X: case F_MINUS_X:
             f *= 0.6; break;
         default:
             break;
@@ -141,7 +140,7 @@ inline void setBlock(Block &block, Block &l, int face, int &tx, int &ty) {
 
 inline void drawTop(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,1,tx,ty);
+    setBlock(b,l,F_PLUS_Y,tx,ty);
     glTexCoord2i(tx+1,ty);
     glVertex3i(1+x, 1+y, z);
     glTexCoord2i(tx,ty);
@@ -155,7 +154,7 @@ inline void drawTop(Block &b, Block &l, int x, int y, int z) {
 //called from the position below
 inline void drawBottom(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,0,tx,ty);
+    setBlock(b,l,F_MINUS_Y,tx,ty);
     glTexCoord2i(tx+1,ty);
     glVertex3i(1+x, 1+y, z);
     glTexCoord2i(tx,ty);
@@ -168,7 +167,7 @@ inline void drawBottom(Block &b, Block &l, int x, int y, int z) {
 
 inline void drawFront(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,3,tx,ty);
+    setBlock(b,l,F_PLUS_Z,tx,ty);
     glTexCoord2i(tx+1,ty);
     glVertex3i(1+x, 1+y, 1+z);
     glTexCoord2i(tx,ty);
@@ -182,7 +181,7 @@ inline void drawFront(Block &b, Block &l, int x, int y, int z) {
 //called from the position behind
 inline void drawBack(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,2,tx,ty);
+    setBlock(b,l,F_MINUS_Z,tx,ty);
     glTexCoord2i(tx+1,ty);
     glVertex3i(1+x, 1+y, 1+z);
     glTexCoord2i(tx,ty);
@@ -195,7 +194,7 @@ inline void drawBack(Block &b, Block &l, int x, int y, int z) {
 
 inline void drawRight(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,5,tx,ty);
+    setBlock(b,l,F_PLUS_X,tx,ty);
     glTexCoord2i(tx,ty);
     glVertex3i(1+x, 1+y, 1+z);
     glTexCoord2i(tx+1,ty);
@@ -209,7 +208,7 @@ inline void drawRight(Block &b, Block &l, int x, int y, int z) {
 //called from the position right
 inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,l,4,tx,ty);
+    setBlock(b,l,F_MINUS_X,tx,ty);
     glTexCoord2i(tx+1,ty);
     glVertex3i(1+x, 1+y, 1+z);
     glTexCoord2i(tx,ty);
@@ -222,7 +221,7 @@ inline void drawLeft(Block &b, Block &l, int x, int y, int z) {
 
 inline void drawDecoration(Block &b, int x, int y, int z) {
     int tx,ty;
-    setBlock(b,b,6,tx,ty);
+    setBlock(b,b,F_NONE,tx,ty);
     glTexCoord2i(tx,ty+1);
     glVertex3i(x, y, z);
     glTexCoord2i(tx+1,ty+1);
@@ -429,7 +428,8 @@ inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ct
 
 void renderHUD(Client *client) { 
 
-    int bx,by,bz; bool proj = client->world.projectToBlock(client->us->x,client->us->y+client->us->height,client->us->z,client->us->pitch,client->us->yaw,bx,by,bz);
+    int bx,by,bz,face; Block *block = client->getTarget(bx,by,bz,face);
+
     glDisable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     float withHUD[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -440,7 +440,7 @@ void renderHUD(Client *client) {
     glColor4f(0.0,0.0,0.0,0.5);
     
     const double off = 0.005; //makes the bound box not sit on the textures
-    if (proj) {
+    if (block) {
         glBegin(GL_LINE_STRIP);
         glVertex3f(bx-off,by-off,bz-off);
         glVertex3f(1+off+bx, by-off, bz-off);
@@ -634,6 +634,19 @@ void processEvents(Client *client) {
                 break;
             case SDL_MOUSEMOTION:
                 if (capture_mouse) client->relLook(event.motion.yrel/2.0,event.motion.xrel/2.0);
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                switch (event.button.button) {
+                    case SDL_BUTTON_LEFT:
+                        client->startDigging();
+                        break;
+                    case SDL_BUTTON_RIGHT:
+                        client->placeHeld();
+                }
+                break;
+            case SDL_MOUSEBUTTONUP:
+                if (event.button.button == SDL_BUTTON_LEFT)
+                    client->stopDigging();
                 break;
             case SDL_QUIT:
                 client->disconnect();

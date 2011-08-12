@@ -120,6 +120,15 @@ class Chunk {
     friend void disposeChunk(Chunk *chunk);
 };
 
+#define F_NONE      -1
+#define F_MINUS_Y   0
+#define F_PLUS_Y    1
+#define F_MINUS_Z   2   
+#define F_PLUS_Z    3
+#define F_MINUS_X   4
+#define F_PLUS_X    5
+
+
 class World {
     public:
         World();
@@ -139,9 +148,12 @@ class World {
         void lockChunks();
         void unlockChunks();
         
+        //checks if a non-passable block is in the range 
         bool containsSolid(int sx,int sy,int sz,int ex,int ey,int ez);
+        //fills fx,fy,fz with a normalized vector representing where the camera is looking
         void facingNormal(double pitch, double yaw, double &fx, double &fy, double &fz);
-        bool projectToBlock(double px, double py, double pz, double pitch, double yaw, int &x, int &y, int &z);
+        //finds the first non-air block intersected by the line of sight and the face that is incident (returns NULL if none found)
+        Block* projectToBlock(double px, double py, double pz, double pitch, double yaw, int &x, int &y, int &z, int &face);
         
         
     private:
