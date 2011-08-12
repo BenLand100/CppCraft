@@ -1,5 +1,6 @@
 #include "world.h"
 #include <iostream>
+#include <cmath>
 #include "zlib.h"
 #include "render.h"
 
@@ -130,6 +131,66 @@ void World::lockChunks() {
 
 void World::unlockChunks() {
     SDL_mutexV(chunklock);
+}
+
+void World::facingNormal(double pitch, double yaw, double &fx, double &fy, double &fz) {
+    fx = cos(-pitch/180.0*3.14159)*cos(yaw/180.0*3.14159);
+    fz = cos(-pitch/180.0*3.14159)*sin(yaw/180.0*3.14159);
+    fy = sin(-pitch/180.0*3.14159);
+}
+
+bool World::projectToBlock(double px, double py, double pz, double pitch, double yaw, int &x, int &y, int &z) {
+    double fx,fy,fz; facingNormal(pitch,yaw,fx,fy,fz);
+    int sx = (int)px; int ix = fx < 0 ? -1 : 1, ex = sx + 4*ix;
+    int sy = (int)py; int iy = fy < 0 ? -1 : 1, ey = sy + 4*iy;
+    int sz = (int)pz; int iz = fz < 0 ? -1 : 1, ez = sz + 4*iz;
+    double tmin = 6*6*6; //hey, it's always going to be smaller than this
+    for (int cx = sx; cx != ex; cx += ix) {
+        double t = (cx-px)/fx;
+        if (t > 0 && t < tmin) {
+            int tx = fx > 0 ? cx : cx-1;
+            int ty = (int)(py+fy*t);
+            int tz = (int)(pz+fz*t);
+            Block *b = getBlock(tx,ty,tz);
+            if (b && b->type) {
+                tmin = t;
+                x = tx;
+                y = ty;
+                z = tz;
+            }
+        }
+    }
+    for (int cy = sy; cy != ey; cy += iy) {
+        double t = (cy-py)/fy;
+        if (t > 0 && t < tmin) {
+            int tx = (int)(px+fx*t-1);
+            int ty = fy > 0 ? cy : cy-1;
+            int tz = (int)(pz+fz*t);
+            Block *b = getBlock(tx,ty,tz);
+            if (b && b->type) {
+                tmin = t;
+                x = tx;
+                y = ty;
+                z = tz;
+            }
+        }
+    }
+    for (int cz = sz; cz != ez; cz += iz) {
+        double t = (cz-pz)/fz;
+        if (t > 0 && t < tmin) {
+            int tx = (int)(px+fx*t-1);
+            int ty = (int)(py+fy*t);
+            int tz = fz > 0 ? cz : cz-1;
+            Block *b = getBlock(tx,ty,tz);
+            if (b && b->type) {
+                tmin = t;
+                x = tx;
+                y = ty;
+                z = tz;
+            }
+        }
+    }
+    return tmin <= 6;
 }
 
 bool World::containsSolid(int sx,int sy,int sz,int ex,int ey,int ez) {

@@ -140,6 +140,8 @@ class World {
         void unlockChunks();
         
         bool containsSolid(int sx,int sy,int sz,int ex,int ey,int ez);
+        void facingNormal(double pitch, double yaw, double &fx, double &fy, double &fz);
+        bool projectToBlock(double px, double py, double pz, double pitch, double yaw, int &x, int &y, int &z);
         
         
     private:

@@ -429,9 +429,41 @@ inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ct
 
 void renderHUD(Client *client) { 
 
-    //find and project --- world will provide the projection from out position and look
-    //draw bounding box before we fuck with the matrices or draw the hud
+    int bx,by,bz; bool proj = client->world.projectToBlock(client->us->x,client->us->y+client->us->height,client->us->z,client->us->pitch,client->us->yaw,bx,by,bz);
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    float withHUD[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, withHUD);
+    glColor4f(0.0,0.0,0.0,0.0);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glColor4f(0.0,0.0,0.0,0.5);
+    
+    const double off = 0.005; //makes the bound box not sit on the textures
+    if (proj) {
+        glBegin(GL_LINE_STRIP);
+        glVertex3f(bx-off,by-off,bz-off);
+        glVertex3f(1+off+bx, by-off, bz-off);
+        glVertex3f(1+off+bx, 1+off+by, bz-off);
+        glVertex3f(bx-off, 1+off+by, bz-off);
+        glVertex3f(bx-off, 1+off+by, 1+off+bz);
+        glVertex3f(1+off+bx, 1+off+by, 1+off+bz);
+        glVertex3f(1+off+bx, by-off, 1+off+bz);
+        glVertex3f(bx-off,by-off,1+off+bz);
+        glVertex3f(bx-off,by-off,bz-off);
+        glVertex3f(bx-off,1+off+by,bz-off);
+        glEnd();
+        glBegin(GL_LINES);
+        glVertex3f(bx-off,by-off,1+off+bz);
+        glVertex3f(bx-off,1+off+by,1+off+bz);
+        glVertex3f(1+off+bx, by-off, bz-off);
+        glVertex3f(1+off+bx, by-off, 1+off+bz);
+        glVertex3f(1+off+bx, 1+off+by, bz-off);
+        glVertex3f(1+off+bx, 1+off+by, 1+off+bz);
+        glEnd();
+    }
 
+    glDisable(GL_DEPTH_TEST);
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -442,13 +474,6 @@ void renderHUD(Client *client) {
     glLoadIdentity();
     glTranslatef(vPort[2]/2.0,vPort[3]/2.0,0);
     glScalef(vPort[2]/2.0,vPort[2]/2.0,0);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    float withHUD[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT, withHUD);
-    glColor4f(0.0,0.0,0.0,0.0);
-    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
     
     //Draw Crosshairs
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_COLOR);
@@ -496,9 +521,7 @@ void renderWorld(Client *client) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    double fx = cos(client->us->pitch/180.0*3.14159)*cos((client->us->yaw)/180.0*3.14159);
-    double fz = cos(client->us->pitch/180.0*3.14159)*sin((client->us->yaw)/180.0*3.14159);
-    double fy = sin(client->us->pitch/180.0*3.14159);
+    double fx, fy, fz; client->world.facingNormal(client->us->pitch, client->us->yaw, fx, fy, fz);
     glRotatef(client->us->pitch, 1.0f, 0.0f, 0.0f);
     glRotatef(client->us->yaw+90.0f, 0.0f, 1.0f, 0.0f);
     
