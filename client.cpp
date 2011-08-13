@@ -146,6 +146,14 @@ void Client::packet(p_generic *p) {
         case 0x03:
             std::cout << "Chat: " << ((p_chat_message*)p)->Message << '\n';
             break;
+        case 0x08:
+            if (((p_update_health*)p)->Health <= 0) {
+                lockUs();
+                std::cout << "We died, respawning...\n";
+                send_respawn(socket,0);
+                unlockUs();
+            }
+            break;
         case 0x0D:
             {
                 p_player_position_and_look_stc *pos = (p_player_position_and_look_stc*)p;
@@ -158,6 +166,7 @@ void Client::packet(p_generic *p) {
                 us->pitch = pos->Pitch;
                 us->yaw = pos->Yaw;
                 sendPos();
+                Chunk *c = world.getChunk(us->x,us->y,us->z); if (c) c->markDirty();
                 unlockUs();
             }
             if (!physics) {
@@ -300,7 +309,9 @@ bool Client::running() {
 }
 
 void Client::sendPos() {
+    lockUs();
     send_player_position_and_look_cts(socket,us->x,us->y,us->height+us->y,us->z,us->yaw,us->pitch,onGround);
+    unlockUs();
 }
 
 void Client::retarget() {
