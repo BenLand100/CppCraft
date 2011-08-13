@@ -7,10 +7,10 @@
 //decorations and specials must be translucent as well
 int Block::opacity() {
     switch (type) {
-        case 0: return S_AIR;
+        case 0: return O_AIR;
         case 31: case 32: case 37: case 38: 
-        case 9: case 18: case 20: case 83: return S_TRANSLUCENT;
-        default: return S_OPAQUE;
+        case 9: case 18: case 20: case 83: return O_TRANSLUCENT;
+        default: return O_OPAQUE;
     }
 }
 
@@ -19,15 +19,6 @@ int Block::style() {
     switch (type) {
         case 31: case 32: case 37: case 38: case 83: return S_DECORATION;
         default: return S_BLOCK;
-    }
-}
-
-int Block::passable() {
-    switch (type) {
-        case 0:
-        case 31: case 32: case 37: case 38: case 83: return S_PASSABLE;
-        case 9: return S_FLUID;
-        default: return S_SOLID;
     }
 }
 
@@ -214,16 +205,7 @@ bool World::containsSolid(int sx,int sy,int sz,int ex,int ey,int ez) {
                 }
                 if (!c) continue;
                 localPos(x,y,z,lx,ly,lz);
-                switch (c->getBlock(lx,ly,lz)->passable()) {
-                    case S_PASSABLE:
-                        break;
-                    case S_FLUID:
-                        break;
-                    case S_CALCULATE:
-                        return true;
-                    case S_SOLID:
-                        return true;
-                }
+                if (!c->getBlock(lx,ly,lz)->passable()) return true;
             }
         }
     }

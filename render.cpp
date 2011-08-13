@@ -258,20 +258,20 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
             Block *nslicecol = &col[16*128];
             for (int y = 0; y < 128; y++) {
                 switch (col[y].opacity()) {
-                    case S_TRANSLUCENT:
+                    case O_TRANSLUCENT:
                         translucent[Pos3D(x+tx,y+ty,z+tz)] = &col[y];
-                    case S_AIR:
-                        if (y < 127 && col[y+1].opacity() == S_OPAQUE) {
+                    case O_AIR:
+                        if (y < 127 && col[y+1].opacity() == O_OPAQUE) {
                             drawBottom(col[y+1],col[y],x,y,z);
                         }
-                        if (x < 15 && nslicecol[y].opacity() == S_OPAQUE) { 
+                        if (x < 15 && nslicecol[y].opacity() == O_OPAQUE) { 
                             drawLeft(nslicecol[y],col[y],x,y,z);
                         }
-                        if (z < 15 && ncol[y].opacity() == S_OPAQUE) {
+                        if (z < 15 && ncol[y].opacity() == O_OPAQUE) {
                             drawBack(ncol[y],col[y],x,y,z);
                         }
                         break;
-                    case S_OPAQUE:
+                    case O_OPAQUE:
                         if (y == 0) {
                             if (cbottom) {
                                 drawBottom(col[0],cbottom->blocks[(x*16+z)*128+127],x,-1,z);
@@ -285,7 +285,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
                             } else {
                                 drawTop(col[127],sky,x,127,z);
                             }
-                        } else if (col[y+1].opacity() != S_OPAQUE) {
+                        } else if (col[y+1].opacity() != O_OPAQUE) {
                             drawTop(col[y],col[y+1],x,y,z);
                         }
                         
@@ -302,7 +302,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
                             } else {
                                 drawRight(col[y],sky,15,y,z);
                             }
-                        } else if (nslicecol[y].opacity() != S_OPAQUE) {
+                        } else if (nslicecol[y].opacity() != O_OPAQUE) {
                             drawRight(col[y],nslicecol[y],x,y,z);
                         }
                         
@@ -319,7 +319,7 @@ inline void drawStaticChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ctop, C
                             } else {
                                 drawFront(col[y],sky,x,y,15);
                             }
-                        } else if (ncol[y].opacity() != S_OPAQUE) {
+                        } else if (ncol[y].opacity() != O_OPAQUE) {
                             drawFront(col[y],ncol[y],x,y,z);
                         }
                         break;
@@ -352,62 +352,62 @@ inline void drawTranslucentChunk(Chunk *chunk, int cx, int cy, int cz, Chunk *ct
             case S_BLOCK:
                 if (y == 127) {
                     if (ctop) {
-                        if (ctop->blocks[(x*16+z)*128+0].opacity() < S_TRANSLUCENT)
+                        if (ctop->blocks[(x*16+z)*128+0].opacity() < O_TRANSLUCENT)
                             drawTop(here[0],ctop->blocks[(x*16+z)*128+0],x,127,z);
                     } else {
                         drawTop(here[0],sky,x,127,z);
                     }
-                } else if (here[1].opacity() < S_TRANSLUCENT) {
+                } else if (here[1].opacity() < O_TRANSLUCENT) {
                     drawTop(here[0],here[1],x,y,z);
                 }
                 if (y == 0) {
                     if (cbottom) {
-                        if (cbottom->blocks[(x*16+z)*128+127].opacity() < S_TRANSLUCENT) 
+                        if (cbottom->blocks[(x*16+z)*128+127].opacity() < O_TRANSLUCENT) 
                             drawBottom(here[0],cbottom->blocks[(x*16+z)*128+127],x,-1,z);
                     } else {
                         drawBottom(here[0],sky,x,-1,z);
                     }
-                } else if (here[-1].opacity() < S_TRANSLUCENT) {
+                } else if (here[-1].opacity() < O_TRANSLUCENT) {
                     drawBottom(here[0],here[-1],x,y-1,z);
                 }
                 if (x == 15) {
                     if (cright) {
-                        if (cright->blocks[(0*16+z)*128+y].opacity() < S_TRANSLUCENT)
+                        if (cright->blocks[(0*16+z)*128+y].opacity() < O_TRANSLUCENT)
                             drawRight(here[0],cright->blocks[(0*16+z)*128+y],15,y,z);
                     } else {
                         drawRight(here[0],sky,15,y,z);
                     }
-                } else if (here[128*16].opacity() < S_TRANSLUCENT) {
+                } else if (here[128*16].opacity() < O_TRANSLUCENT) {
                     drawRight(here[0],here[128*16],x,y,z);
                 }
                 if (x == 0) {
                     if (cleft) { 
-                        if (cleft->blocks[(15*16+z)*128+y].opacity() < S_TRANSLUCENT)
+                        if (cleft->blocks[(15*16+z)*128+y].opacity() < O_TRANSLUCENT)
                             drawLeft(here[0],cleft->blocks[(15*16+z)*128+y],-1,y,z);
                     } else {
                         drawLeft(here[0],sky,-1,y,z);
                     }
-                } else if (here[-128*16].opacity() < S_TRANSLUCENT) {
+                } else if (here[-128*16].opacity() < O_TRANSLUCENT) {
                     drawLeft(here[0],here[-128*16],x-1,y,z);
                 }
                 if (z == 15) {
                     if (cfront) {
-                        if (cfront->blocks[(x*16+0)*128+y].opacity() < S_TRANSLUCENT)
+                        if (cfront->blocks[(x*16+0)*128+y].opacity() < O_TRANSLUCENT)
                             drawFront(here[0],cfront->blocks[(x*16+0)*128+y],x,y,15);
                     } else {
                         drawFront(here[0],sky,x,y,15);
                     }
-                } else if (here[128].opacity() < S_TRANSLUCENT) {
+                } else if (here[128].opacity() < O_TRANSLUCENT) {
                     drawFront(here[0],here[128],x,y,z);
                 }
                 if (z == 0) {
                     if (cback) { 
-                        if (cback->blocks[(x*16+15)*128+y].opacity() < S_TRANSLUCENT)
+                        if (cback->blocks[(x*16+15)*128+y].opacity() < O_TRANSLUCENT)
                             drawBack(here[0],cback->blocks[(x*16+15)*128+y],x,y,-1);
                     } else {
                         drawBack(here[0],sky,x,y,-1);
                     }
-                } else if (here[-128].opacity() < S_TRANSLUCENT) {
+                } else if (here[-128].opacity() < O_TRANSLUCENT) {
                     drawBack(here[0],here[-128],x,y,z-1);
                 }
                 break;

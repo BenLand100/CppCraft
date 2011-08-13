@@ -3,6 +3,7 @@
 
 #include "SDL_mutex.h"
 #include <map>
+#include "items.h"
 
 class Client; //foward declaration
 
@@ -62,18 +63,13 @@ class Pos3D {
         }
 };
 
-#define S_AIR           0
-#define S_TRANSLUCENT   1
-#define S_OPAQUE        2
+#define O_AIR           0
+#define O_TRANSLUCENT   1
+#define O_OPAQUE        2
 
 #define S_BLOCK         3
 #define S_DECORATION    4
 #define S_SPECIAL       5
-
-#define S_PASSABLE      6
-#define S_FLUID         7
-#define S_SOLID         8
-#define S_CALCULATE     9
 
 class Block {
     public:
@@ -83,7 +79,17 @@ class Block {
         //see defines above
         int opacity();
         int style();
-        int passable();
+        
+        inline const char* name() { return item_name(type); }
+        int maxstack() { return item_maxstack(type); }
+        bool placeable() { return item_placeable(type); }
+        bool usable() { return item_usable(type); }
+        bool passable() { return item_passable(type); }
+        bool diggable() { return item_diggable(type); }
+        bool activatable() { return item_activatable(type); }
+        bool safe() { return item_safe(type); }
+        float hardness() { return item_hardness(type); }
+        int material() { return item_material(type); }
         
         int type;
         char meta,light,sky;
