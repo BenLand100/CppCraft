@@ -1,0 +1,7 @@
+CppCraft is a rather ambitious project of mine to create either a minecraft
+bot or fully fledged client. At the very least, it is a real-time renderer
+of a minecraft world and is capable of connecting to a vanilia minecraft 
+server by emulating a vanilia client. Not all features are added, but the
+world is navigable and many important blocks are rendered properly.
+
+~Benjamin J. Land a.k.a. BenLand100
