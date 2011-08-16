@@ -1,7 +1,12 @@
-CppCraft is a rather ambitious project of mine to create either a minecraft
+CppCraft is a rather ambitious project of mine to create either a MineCraft
 bot or fully fledged client. At the very least, it is a real-time renderer
-of a minecraft world and is capable of connecting to a vanilia minecraft 
-server by emulating a vanilia client. Not all features are added, but the
+of a MineCraft world and is capable of connecting to a vanilla MineCraft 
+server by emulating a vanilla client. Not all features are added, but the
 world is navigable and many important blocks are rendered properly.
+
+To build you will need an OpenGL development distribution, as well as 
+headers for SDL and SDL_net. To test, you will need to grab a MineCraft
+server and turn authentication off (since the CppCraft does not yet negotiate
+authentication with MineCraft's servers)
 
 ~Benjamin J. Land a.k.a. BenLand100
