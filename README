@@ -4,9 +4,10 @@ of a MineCraft world and is capable of connecting to a vanilla MineCraft
 server by emulating a vanilla client. Not all features are added, but the
 world is navigable and many important blocks are rendered properly.
 
-To build you will need an OpenGL development distribution, as well as 
-headers for SDL and SDL_net. To test, you will need to grab a MineCraft
-server and turn authentication off (since the CppCraft does not yet negotiate
-authentication with MineCraft's servers)
+To build you will need OpenGL, zlib, SDL, and SDL_net development distributions. 
+To test, you will need to grab a MineCraft server and turn authentication off 
+(since the CppCraft does not yet negotiate authentication with MineCraft's 
+servers). Feel free to turn gravity down, increase jump velocity, and jump
+over mountains! Just be sure to enable flying on the server first. ;)
 
 ~Benjamin J. Land a.k.a. BenLand100
