@@ -62,7 +62,7 @@ class Client {
         SDL_mutex *usLock;
         
         double forwards,sideways; //our motion, set by setMotion, managed by physics_thread
-        bool digging; int digStartTime; //set by startDigging/stopDigging, managed by physics_thread
+        bool digging; double digStatus; //set by startDigging/stopDigging, managed by physics_thread
         Block *target; int targetx,targety,targetz,targetface; //the block we are looking at, managed by physics_thread
         Block *beingdug; //the block we are digging, managed by physics_thread
         

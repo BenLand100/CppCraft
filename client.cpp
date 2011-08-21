@@ -21,6 +21,7 @@
 #include "client.h"
 #include "packets.h"
 #include "render.h"
+#include "tools.h"
 #include <cmath>
 
 Client::Client() {
@@ -73,6 +74,7 @@ bool Client::connect(char *host, int port) {
 }
 
 int physics_thread(Client *client) {
+    double diginc = 0.0;
     while (client->doPhysics) {
         SDL_Delay(50);
         double dt = 0.05;
@@ -82,12 +84,15 @@ int physics_thread(Client *client) {
         if (client->digging) {
             if (client->target) {
                 if (client->beingdug != client->target) {
-                    client->digStartTime = SDL_GetTicks();
+                    client->digStatus = 0.0;
+                    diginc = incPerTick(-1,client->target->type,false,client->onGround); //TODO should use the held tool and underwater status
                     client->beingdug = client->target;
                     send_player_digging(client->socket,0,client->targetx,client->targety,client->targetz,client->targetface);
                 } else {
-                    if (SDL_GetTicks() - client->digStartTime >= 3000) { //Should use the pause required by the block
+                    client->digStatus += diginc;
+                    if (client->digStatus >= 1.0) { //Should use the pause required by the block
                         client->beingdug = NULL;
+                        client->digStatus = 0.0;
                         send_player_digging(client->socket,2,client->targetx,client->targety,client->targetz,client->targetface);
                         std::cout << "Dug: " << std::dec << client->targetx << ' ' << client->targety << ' ' << client->targetz << ' ' << client->targetface << '\n';
                     }
